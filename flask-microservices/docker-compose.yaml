@@ -1,4 +1,8 @@
 version: "3.7"
+
+volumes:
+    grafana_data: {}
+
 services:
   frontend-proxy:
     build:
@@ -18,6 +22,8 @@ services:
       dockerfile: Dockerfile-film
     networks:
     - servicemesh
+    depends_on:
+    - "rating-service"
     environment:
     - SERVICE_NAME='film-service'
   rating-service:
@@ -28,6 +34,29 @@ services:
     - servicemesh
     environment:
     - SERVICE_NAME='rating-service'
+  prometheus:
+    build:
+      context: .
+      dockerfile: Dockerfile-prometheus
+    command: --config.file=/prometheus/prometheus.yaml --log.level=debug
+    networks:
+    - servicemesh
+    ports:
+    - "9090:9090"
+    depends_on:
+    - "frontend-proxy"
+  grafana:
+    image: grafana/grafana:latest
+    user: "472"
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources/:/etc/grafana/provisioning/datasources/
+    env_file:
+      - ./grafana/config.monitoring
 
 networks:
     servicemesh: {}

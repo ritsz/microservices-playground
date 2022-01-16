@@ -29,7 +29,8 @@ def get_rating_by_id(id):
 def post_rating():
     global rating_database
     film_dict = json.loads(request.get_data().decode('utf-8').replace("\'", "\""))
-    film_dict['id'] = str(uuid.uuid4())
+    # if film_dict.get('id', None) is None:
+    #     film_dict['id'] = str(uuid.uuid4())
     rating_database.append(film_dict)
     app.logger.info('{}: Added film {}: {}'.format(get_debug_string(), id, film_dict))
     return json.dumps(rating_database)
@@ -44,27 +45,7 @@ def get_rating(film_name):
 def get_debug_string():
     return '(service {}):(hostname {})'.format(os.environ['SERVICE_NAME'], socket.gethostname())
 
-def populate_rating_database():
-    global rating_database
-    film_1 = {
-        'id': str(uuid.uuid4()),
-        'name': 'Citizen Kane',
-        'rating': '5'
-    }
-    film_2 = {
-        'id': str(uuid.uuid4()),
-        'name': 'Bangalore Days',
-        'rating': '3.5'
-    }
-    film_3 = {
-        'id': str(uuid.uuid4()),
-        'name': 'Agneepath',
-        'rating': '4'
-    }
-    rating_database = [film_1, film_2, film_3]
-
 
 if __name__ == '__main__':
-    populate_rating_database()
     app.run(host='0.0.0.0', port=6000, debug=True)
     app.logger.info("Ratings Service has started")

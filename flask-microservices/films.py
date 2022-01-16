@@ -1,7 +1,8 @@
 from flask import Flask, abort, request
-import os
-import socket
 import json
+import os
+import requests
+import socket
 import uuid
 
 app = Flask(__name__)
@@ -28,8 +29,10 @@ def get_film_by_id(id):
 def post_film():
     global film_database
     film_dict = json.loads(request.get_data().decode('utf-8').replace("\'", "\""))
-    film_dict['id'] = str(uuid.uuid4())
+    id = str(uuid.uuid4())
+    film_dict['id'] = id
     film_database.append(film_dict)
+    add_film_rating_database(id, film_dict['name'], '5')
     app.logger.info('{}: Added film {}: {}'.format(get_debug_string(), id, film_dict))
     return json.dumps(film_database)
 
@@ -46,25 +49,42 @@ def get_debug_string():
 
 def populate_film_database():
     global film_database
+    id = str(uuid.uuid4())
     film_1 = {
-        'id': str(uuid.uuid4()),
+        'id': id,
         'name': 'Citizen Kane',
         'language': 'English'
     }
+    add_film_rating_database(id, film_1['name'], '5')
+
+    id = str(uuid.uuid4())
     film_2 = {
-        'id': str(uuid.uuid4()),
+        'id': id,
         'name': 'Bangalore Days',
         'language': 'Malayalam'
     }
+    add_film_rating_database(id, film_2['name'], '3.5')
+
+    id = str(uuid.uuid4())
     film_3 = {
-        'id': str(uuid.uuid4()),
+        'id': id,
         'name': 'Agneepath',
         'language': 'Hindi'
     }
+    add_film_rating_database(id, film_3['name'], '4')
     film_database = [film_1, film_2, film_3]
+
+def add_film_rating_database(id, name, rating):
+    film = {
+        'id': id,
+        'name': name,
+        'rating': rating
+    }
+    res = requests.post('http://rating-service:6000/ratings', json=film)
+    app.logger.info('{}: Posted rating {}'.format(get_debug_string(), res.text))
 
 
 if __name__ == '__main__':
-    populate_film_database()
+    # populate_film_database()
     app.run(host='0.0.0.0', port=5000, debug=True)
     app.logger.info("Film Service has started")

@@ -20,9 +20,9 @@
     * Port: `5000`
   * `rating-service`:
     * holds the record of the id, name, and rating of a film.
+    * All ratings are 5 star right now.
     * Port: `6000`
 * Both the services are created using flask.
-* The IDs are not consistent across the 2 services (ie, same film has different ID in `rating-service` and `film-service`).
 
 ### Envoy Proxy
 * A `frontend-proxy` services servers as the reverse proxy of this setup.
@@ -66,6 +66,16 @@
                   address: film-service
                   port_value: 5000
     ```
+
+### Metrics
+* `Envoy` exports metrics on the admin port configured in `envoy-proxy.yaml`.
+* The `/stats` endpoint exposes metrics for scraping by `statsd`.
+* The `/stats/prometheus` endpoint exposes metrics that can be scraped by `prometheus`.
+* `Prometheus` is configured using `prometheus.yaml` file.
+* `Prometheus` scrapes `frontend-proxy` metrics.
+* `http://localhost:9090` can be opened in browser to prometheus dashboards.
+![Prometheus dashboard](./dashboard-prometheus.png)
+
 
 ### Deployment
 * Each service and envoy-proxy has a `Dockerfile`.
