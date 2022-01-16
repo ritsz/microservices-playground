@@ -1,0 +1,33 @@
+version: "3.7"
+services:
+  frontend-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile-envoyproxy
+    networks:
+    - servicemesh
+    ports:
+    - "8080:8080"
+    - "9901:9901"
+    depends_on:
+    - "film-service"
+    - "rating-service"
+  film-service:
+    build:
+      context: .
+      dockerfile: Dockerfile-film
+    networks:
+    - servicemesh
+    environment:
+    - SERVICE_NAME='film-service'
+  rating-service:
+    build:
+      context: .
+      dockerfile: Dockerfile-rating
+    networks:
+    - servicemesh
+    environment:
+    - SERVICE_NAME='rating-service'
+
+networks:
+    servicemesh: {}

@@ -1,0 +1,10 @@
+FROM envoyproxy/envoy-dev:latest
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y curl \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+COPY ./envoy-proxy.yaml /etc/envoy-proxy.yaml
+RUN chmod go+r /etc/envoy-proxy.yaml
+CMD ["/usr/local/bin/envoy", "-c", "/etc/envoy-proxy.yaml", "--service-cluster", "envoy-proxy"]
