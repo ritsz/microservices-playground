@@ -1,6 +1,6 @@
 ## Envoy Proxy
 
-### Test
+### Test on Docker
 * Build the images.
 * Deploys the services and the envoy proxy.
 * Runs `curl` commands to check the APIs.
@@ -11,6 +11,11 @@
   * In the scaled setup, `POST` + `GET` verification can fail.
 ```bash
 ./verify.sh
+```
+
+### Test on Kubernetes
+```
+./k8s-verify.sh
 ```
 
 ### Services
@@ -78,9 +83,52 @@
 
 
 ### Deployment
+#### Build Images
 * Each service and envoy-proxy has a `Dockerfile`.
 * The `Dockerfile` is used to create the image of the service.
+#### Deploy on Docker
 * `docker-compose.yaml` file is used to compose all the services and add them to a common network `servicemesh`.
 * Inside the `servicemesh` network, all services can discover each other using service names.
 * Only the `frontend-proxy` exposes ports to the host system. All traffic to this network of microservices will pass through the `frontend-proxy`.
 * The `film-service` and `rating-service` microservices don't expose any ports to the host. They expect no connections from the host directly.
+#### Deploy on Kubernetes
+* `kubernetes-deployment.yaml` file is used to deploy all the components.
+* `film-service`, `rating-service`, `frontend-proxy` and `prometheus` have corresponding `Deployment` and `Service`.
+* Each service is discoverable using their `Service` names.
+* `Service` map to `Deployment` using label selectors.
+* Each pod has one container. The image for the container need to be build using the `Dockerfile`.
+* Each container also needs to expose the ports that they want other pods/services to connect to.
+  * For example `film-service` container needs to expose `5000` port so that other services can connect to this container's application.
+  * **Note that this exposes the ports only inside the kubernetes network to other pods/services and NOT to the host network or internet!**
+* The `prometheus`config file `prometheus.yml` is created as a `ConfigMap`.
+* The `ConfigMap` is created as a `volume` inside the pod `spec`.
+* The `volume` is mounted inside the container using a `volumeMounts`. This way the `prometheus.yml` file is mapped from `configMap` to a file in the container.
+```bash
+$ kubectl apply -f kubernetes-deployment.yaml
+service/frontend-proxy created
+service/film-service created
+service/rating-service created
+deployment.apps/frontend-proxy-deployment created
+deployment.apps/film-service-deployment created
+deployment.apps/rating-service-deployment created
+configmap/prometheus-server-conf created
+deployment.apps/prometheus-deployment created
+
+$ kubectl port-forward svc/frontend-proxy 8080:8080 --address 0.0.0.0
+Forwarding from 0.0.0.0:8080 -> 8080
+
+$ curl -X POST http://127.0.0.1:8080/films --data "{
+  'name': 'Anand',
+  'language': 'English'
+}"
+[{"name": "Anand", "language": "English", "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd"}]
+
+$ curl -X GET http://127.0.0.1:8080/ratings | jq .
+[
+  {
+    "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd",
+    "name": "Anand",
+    "rating": "5"
+  }
+]
+```

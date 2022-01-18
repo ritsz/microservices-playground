@@ -6,7 +6,7 @@ volumes:
 services:
   frontend-proxy:
     build:
-      context: .
+      context: Dockerfiles
       dockerfile: Dockerfile-envoyproxy
     networks:
     - servicemesh
@@ -18,7 +18,7 @@ services:
     - "rating-service"
   film-service:
     build:
-      context: .
+      context: Dockerfiles
       dockerfile: Dockerfile-film
     networks:
     - servicemesh
@@ -28,7 +28,7 @@ services:
     - SERVICE_NAME='film-service'
   rating-service:
     build:
-      context: .
+      context: Dockerfiles
       dockerfile: Dockerfile-rating
     networks:
     - servicemesh
@@ -36,7 +36,7 @@ services:
     - SERVICE_NAME='rating-service'
   prometheus:
     build:
-      context: .
+      context: Dockerfiles
       dockerfile: Dockerfile-prometheus
     command: --config.file=/prometheus/prometheus.yaml --log.level=debug
     networks:

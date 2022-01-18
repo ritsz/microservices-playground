@@ -1,0 +1,3 @@
+FROM prom/prometheus
+WORKDIR /prometheus
+COPY config/prometheus.yaml /prometheus/prometheus.yaml
