@@ -1,0 +1,55 @@
+version: "3.7"
+
+services:
+  frontend-proxy:
+    build:
+      context: Dockerfiles
+      dockerfile: Dockerfile-envoyproxy
+    networks:
+    - servicemesh
+    ports:
+    - "8080:8080"
+    - "9901:9901"
+    depends_on:
+    - "film-service"
+    - "rating-service"
+  film-service:
+    build:
+      context: Dockerfiles
+      dockerfile: Dockerfile-film
+    networks:
+    - servicemesh
+    depends_on:
+    - "rating-service"
+    environment:
+    - SERVICE_NAME='film-service'
+  rating-service:
+    build:
+      context: Dockerfiles
+      dockerfile: Dockerfile-rating
+    networks:
+    - servicemesh
+    environment:
+    - SERVICE_NAME='rating-service'
+  prometheus:
+    build:
+      context: Dockerfiles
+      dockerfile: Dockerfile-prometheus
+    command: --config.file=/prometheus/prometheus.yaml --log.level=debug
+    networks:
+    - servicemesh
+    ports:
+    - "9090:9090"
+    depends_on:
+    - "frontend-proxy"
+  zipkin:
+    image: openzipkin/zipkin
+    networks:
+      servicemesh:
+        aliases:
+        - zipkin
+    ports:
+    - "9411:9411"
+
+networks:
+    servicemesh: {}
