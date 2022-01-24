@@ -1,23 +1,5 @@
 ## Envoy Proxy
 
-### Test on Docker
-* Build the images.
-* Deploys the services and the envoy proxy.
-* Runs `curl` commands to check the APIs.
-* Scales the services.
-* Runs the `curl` commands to check the APIs again.
-  * The scaled services don't share a common data fabric layer, they hold their data in memory.
-  * `POST` could go to one replica and `GET` to another.
-  * In the scaled setup, `POST` + `GET` verification can fail.
-```bash
-./verify.sh
-```
-
-### Test on Kubernetes
-```
-./k8s-verify.sh
-```
-
 ### Services
 * 2 services are deployed:
   * `film-service`:
@@ -39,38 +21,38 @@
     * We configure that any `films/*` route is forwarded to `film-service-cluster` cluster.
     * We configure that any `ratings/*` route is forwarded to `rating-service-cluster` cluster.
     ```yaml
-    virtual_hosts:
-    - name: backend
-      domains:
-      - "*"
-      routes:
-      - match:
-          prefix: "/films"
-        route:
-          cluster: film-service-cluster
-      - match:
-          prefix: "/ratings"
+      virtual_hosts:
+      - name: backend
+        domains:
+        - "*"
+        routes:
+        - match:
+            prefix: "/films"
+          route:
+            cluster: film-service-cluster
+        - match:
+            prefix: "/ratings"
     ```
   * cluster specification:
     * This defines the cluster names, load-balancing policies and what services are part of this cluster.
     * In this example, both clusters have just on service load balancer endpoint.
     * Multiple services can be part of a cluster. Request to cluster will be load balanced on these services.
     ```yaml
-    clusters:
-    - name: film-service-cluster
-      connect_timeout: 0.25s
-      type: STRICT_DNS
-      lb_policy: ROUND_ROBIN
-      load_assignment:
-        cluster_name: film-service-cl-name
-        endpoints:
-        - lb_endpoints:
-          - endpoint:
-              address:
-                socket_address:
-                  address: film-service
-                  port_value: 5000
-    ```
+      clusters:
+      - name: film-service-cluster
+        connect_timeout: 0.25s
+        type: STRICT_DNS
+        lb_policy: ROUND_ROBIN
+        load_assignment:
+          cluster_name: film-service-cl-name
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: film-service
+                    port_value: 5000
+      ```
 
 ### Metrics
 * `Envoy` exports metrics on the admin port configured in `envoy-proxy.yaml`.
@@ -80,7 +62,6 @@
 * `Prometheus` scrapes `frontend-proxy` metrics.
 * `http://localhost:9090` can be opened in browser to prometheus dashboards.
 ![Prometheus dashboard](./dashboard-prometheus.png)
-
 
 ### Deployment
 #### Build Images
@@ -104,31 +85,49 @@
 * The `ConfigMap` is created as a `volume` inside the pod `spec`.
 * The `volume` is mounted inside the container using a `volumeMounts`. This way the `prometheus.yml` file is mapped from `configMap` to a file in the container.
 ```bash
-$ kubectl apply -f kubernetes-deployment.yaml
-service/frontend-proxy created
-service/film-service created
-service/rating-service created
-deployment.apps/frontend-proxy-deployment created
-deployment.apps/film-service-deployment created
-deployment.apps/rating-service-deployment created
-configmap/prometheus-server-conf created
-deployment.apps/prometheus-deployment created
+  $ kubectl apply -f kubernetes-deployment.yaml
+  service/frontend-proxy created
+  service/film-service created
+  service/rating-service created
+  deployment.apps/frontend-proxy-deployment created
+  deployment.apps/film-service-deployment created
+  deployment.apps/rating-service-deployment created
+  configmap/prometheus-server-conf created
+  deployment.apps/prometheus-deployment created
 
-$ kubectl port-forward svc/frontend-proxy 8080:8080 --address 0.0.0.0
-Forwarding from 0.0.0.0:8080 -> 8080
+  $ kubectl port-forward svc/frontend-proxy 8080:8080 --address 0.0.0.0
+  Forwarding from 0.0.0.0:8080 -> 8080
 
-$ curl -X POST http://127.0.0.1:8080/films --data "{
-  'name': 'Anand',
-  'language': 'English'
-}"
-[{"name": "Anand", "language": "English", "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd"}]
+  $ curl -X POST http://127.0.0.1:8080/films --data "{
+    'name': 'Anand',
+    'language': 'English'
+  }"
+  [{"name": "Anand", "language": "English", "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd"}]
 
-$ curl -X GET http://127.0.0.1:8080/ratings | jq .
-[
-  {
-    "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd",
-    "name": "Anand",
-    "rating": "5"
-  }
-]
+  $ curl -X GET http://127.0.0.1:8080/ratings | jq .
+  [
+    {
+      "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd",
+      "name": "Anand",
+      "rating": "5"
+    }
+  ]
+```
+
+### Test on Docker
+* Build the images.
+* Deploys the services and the envoy proxy.
+* Runs `curl` commands to check the APIs.
+* Scales the services.
+* Runs the `curl` commands to check the APIs again.
+  * The scaled services don't share a common data fabric layer, they hold their data in memory.
+  * `POST` could go to one replica and `GET` to another.
+  * In the scaled setup, `POST` + `GET` verification can fail.
+```bash
+./verify.sh
+```
+
+### Test on Kubernetes
+```bash
+./k8s-verify.sh
 ```

@@ -39,13 +39,13 @@ static_resources:
                 route:
                   cluster: film-service-cluster
                 decorator:
-                  operation: checkFilms
+                  operation: operationFilms
               - match:
                   prefix: "/ratings"
                 route:
                   cluster: rating-service-cluster
                 decorator:
-                  operation: checkRatings
+                  operation: operationRatings
               response_headers_to_add:
               - header:
                   key: "x-b3-traceid"

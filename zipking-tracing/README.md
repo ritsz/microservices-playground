@@ -1,17 +1,115 @@
 ## Tracing with Zipkin
+### Envoy Proxy
+* A `frontend-proxy` services servers as the reverse proxy of this setup.
+* The proxy is running using Envoy.
+* `envoy-proxy.yaml` file has the configuration for Envoy.
+* The `virtual_hosts` and `cluster` configuration for `frontend-proxy` is the same as `envoy-proxy` example.
+* `generate_request_id` property of the `HttpConnectionManager` is set. The `HttpConnectionManager` will generate `x-request-id` header if it is not present.
+* To perform tracing of request, we configure `Zipkin` tracers called `envoy.tracers.zipkin`.
+* The tracer is configured using `ZipkinConfig`.
+  * `collector_cluster`: The cluster manager cluster that hosts the Zipkin collectors.
+  * `collector_endpoint`: The API endpoint of the Zipkin service where the spans will be sent.
+  * `collector_endpoint_version`:
+    * `HTTP_JSON`: Zipkin API v2, JSON over HTTP.
+    * `HTTP_PROTO`: Zipkin API v2, protobuf over HTTP.
+* Adding the `ZipkinConfig` configures Envoy to start creating request ID, trace ID etc.
+  ```yaml
+  generate_request_id: true
+  tracing:
+    provider:
+      name: envoy.tracers.zipkin
+      typed_config:
+        "@type": type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
+        collector_cluster: zipkin-cluster
+        collector_endpoint: "/api/v2/spans"
+        collector_endpoint_version: HTTP_JSON
+  ```
+* The `response_headers_to_add` config adds the headers specified in the config to the response to the client. In this example, we add request ID and trace ID.
+  ```bash
+  $ curl -vsA "Testing" http://127.0.0.1:8080/ratings |  jq .
+  *   Trying 127.0.0.1...
+  * TCP_NODELAY set
+  * Connected to 127.0.0.1 (127.0.0.1) port 8080 (#0)
+  > GET /ratings HTTP/1.1
+  > Host: 127.0.0.1:8080
+  > User-Agent: Testing
+  > Accept: */*
+  >
+  < HTTP/1.1 200 OK
+  < content-type: text/html; charset=utf-8
+  < content-length: 82
+  < server: envoy
+  < date: Mon, 24 Jan 2022 16:45:01 GMT
+  < x-envoy-upstream-service-time: 21
+  < x-b3-traceid: 3d7a3e4cb620f266
+  < x-request-id: 732f2fd7-0290-9411-9a0d-0e08962f1839
+  <
+  { [82 bytes data]
+  * Connection #0 to host 127.0.0.1 left intact
+  * Closing connection 0
+  [
+      {
+        "id": "b0994411-0747-4d51-b51f-8969e3079788",
+        "name": "Titanic",
+        "rating": "5"
+      }
+  ]
+  ```
 
-### Test on Kubernetes
-* Build the images.
-* Deploys the services and the envoy proxy.
-* Runs `curl` commands to check the APIs.
-* Scales the services.
-* Runs the `curl` commands to check the APIs again.
-  * The scaled services don't share a common data fabric layer, they hold their data in memory.
-  * `POST` could go to one replica and `GET` to another.
-  * In the scaled setup, `POST` + `GET` verification can fail.
-```
-./k8s-verify.sh
-```
+### Zipkin
+* The Zipkin service is running in the kubernetes cluster.
+* `frontend-proxy`, `film-service` and `rating-service` are configured such that they forward `POST` their trace/span information to this `zipkin` service.
+* The `ZipkinConfig` in Envoy config results in additional headers being added to the requests that reach the other services.
+  ```bash
+  $ curl -X POST http://127.0.0.1:8080/films --data "{       
+    'name': 'Titanic',
+    'language': 'English'
+  }" | jq .
+  [
+      {
+        "name": "Mad Max",
+        "language": "English",
+        "id": "b1757edc-454d-47b1-ab82-c18c06b6002b"
+      },
+      {
+        "name": "Titanic",
+        "language": "English",
+        "id": "eeb67863-187b-4016-a190-db48ec568fa4"
+      }
+  ]
+  ```
+  ```bash
+  ### Logs
+  film-service_1    |  (service 'film-service'):(hostname af66a00ca7c9) Headers: {
+      'X-Ot-Span-Context': None,
+      'X-Request-Id': 'feb83141-204f-9efc-bc27-69e93514e883',
+      'X-B3-TraceId': '534a99c76f8c9cc0',
+      'X-B3-SpanId': '534a99c76f8c9cc0',
+      'X-B3-ParentSpanId': None,
+      'X-B3-Sampled': '1',
+      'X-B3-Flags': None,
+      'uber-trace-id': None,
+      'sw8': None}
+  ```
+* A transport handler is created that provides a mechanism to propagate traces to zipkin service.
+  ```python
+  def default_handler(encoded_span):
+      return requests.post(
+          ZIPKIN_DSN,
+          data=encoded_span,
+          headers={"Content-Type": "application/json"})
+  ```
+* To create a new span, the `zipkin_span` function is used. _**Notice that the `ZipkinAttrs` for the span are configured using the trace/span IDs in the headers.**_
+  ```python
+  with zipkin_span(service_name=SERVICE_NAME,
+        zipkin_attrs=ZipkinAttrs(
+            trace_id=headers["X-B3-TraceId"], span_id=headers["X-B3-SpanId"],
+            parent_span_id=headers["X-B3-ParentSpanId"],
+            flags=headers['X-B3-Flags'],is_sampled=headers["X-B3-Sampled"],
+        ),
+        span_name="POST /films", transport_handler=default_handler):
+  ```
+![Zipkin dashboard](./zipkin.png)
 
 ### Services
 * 2 services are deployed:
@@ -23,59 +121,6 @@
     * All ratings are 5 star right now.
     * Port: `6000`
 * Both the services are created using flask.
-
-### Envoy Proxy
-* A `frontend-proxy` services servers as the reverse proxy of this setup.
-* The proxy is running using Envoy.
-* `envoy-proxy.yaml` file has the configuration for Envoy.
-* The main configuration are:
-  * virtual host specification:
-    * This configuration describes what route prefix matches with which cluster.
-    * We configure that any `films/*` route is forwarded to `film-service-cluster` cluster.
-    * We configure that any `ratings/*` route is forwarded to `rating-service-cluster` cluster.
-    ```yaml
-    virtual_hosts:
-    - name: backend
-      domains:
-      - "*"
-      routes:
-      - match:
-          prefix: "/films"
-        route:
-          cluster: film-service-cluster
-      - match:
-          prefix: "/ratings"
-    ```
-  * cluster specification:
-    * This defines the cluster names, load-balancing policies and what services are part of this cluster.
-    * In this example, both clusters have just on service load balancer endpoint.
-    * Multiple services can be part of a cluster. Request to cluster will be load balanced on these services.
-    ```yaml
-    clusters:
-    - name: film-service-cluster
-      connect_timeout: 0.25s
-      type: STRICT_DNS
-      lb_policy: ROUND_ROBIN
-      load_assignment:
-        cluster_name: film-service-cl-name
-        endpoints:
-        - lb_endpoints:
-          - endpoint:
-              address:
-                socket_address:
-                  address: film-service
-                  port_value: 5000
-    ```
-
-### Metrics
-* `Envoy` exports metrics on the admin port configured in `envoy-proxy.yaml`.
-* The `/stats` endpoint exposes metrics for scraping by `statsd`.
-* The `/stats/prometheus` endpoint exposes metrics that can be scraped by `prometheus`.
-* `Prometheus` is configured using `prometheus.yaml` file.
-* `Prometheus` scrapes `frontend-proxy` metrics.
-* `http://localhost:9090` can be opened in browser to prometheus dashboards.
-![Prometheus dashboard](./dashboard-prometheus.png)
-
 
 ### Deployment
 #### Build Images
@@ -90,35 +135,45 @@
 * Each container also needs to expose the ports that they want other pods/services to connect to.
   * For example `film-service` container needs to expose `5000` port so that other services can connect to this container's application.
   * **Note that this exposes the ports only inside the kubernetes network to other pods/services and NOT to the host network or internet!**
-* The `prometheus`config file `prometheus.yml` is created as a `ConfigMap`.
-* The `ConfigMap` is created as a `volume` inside the pod `spec`.
-* The `volume` is mounted inside the container using a `volumeMounts`. This way the `prometheus.yml` file is mapped from `configMap` to a file in the container.
-```bash
-$ kubectl apply -f kubernetes-deployment.yaml
-service/frontend-proxy created
-service/film-service created
-service/rating-service created
-deployment.apps/frontend-proxy-deployment created
-deployment.apps/film-service-deployment created
-deployment.apps/rating-service-deployment created
-configmap/prometheus-server-conf created
-deployment.apps/prometheus-deployment created
+    ```bash
+    $ kubectl apply -f kubernetes-deployment.yaml
+    service/frontend-proxy created
+    service/film-service created
+    service/rating-service created
+    deployment.apps/frontend-proxy-deployment created
+    deployment.apps/film-service-deployment created
+    deployment.apps/rating-service-deployment created
+    configmap/prometheus-server-conf created
+    deployment.apps/prometheus-deployment created
 
-$ kubectl port-forward svc/frontend-proxy 8080:8080 --address 0.0.0.0
-Forwarding from 0.0.0.0:8080 -> 8080
+    $ kubectl port-forward svc/frontend-proxy 8080:8080 --address 0.0.0.0
+    Forwarding from 0.0.0.0:8080 -> 8080
 
-$ curl -X POST http://127.0.0.1:8080/films --data "{
-  'name': 'Anand',
-  'language': 'English'
-}"
-[{"name": "Anand", "language": "English", "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd"}]
+    $ curl -X POST http://127.0.0.1:8080/films --data "{
+      'name': 'Anand',
+      'language': 'English'
+    }"
+    [{"name": "Anand", "language": "English", "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd"}]
 
-$ curl -X GET http://127.0.0.1:8080/ratings | jq .
-[
-  {
-    "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd",
-    "name": "Anand",
-    "rating": "5"
-  }
-]
+    $ curl -X GET http://127.0.0.1:8080/ratings | jq .
+    [
+      {
+        "id": "42aa33ed-4dbf-4694-a14d-a9d84eeb2cbd",
+        "name": "Anand",
+        "rating": "5"
+      }
+    ]
+    ```
+
+### Test on Kubernetes
+* Build the images.
+* Deploys the services and the envoy proxy.
+* Runs `curl` commands to check the APIs.
+* Scales the services.
+* Runs the `curl` commands to check the APIs again.
+  * The scaled services don't share a common data fabric layer, they hold their data in memory.
+  * `POST` could go to one replica and `GET` to another.
+  * In the scaled setup, `POST` + `GET` verification can fail.
+```
+./k8s-verify.sh
 ```
