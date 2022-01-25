@@ -191,6 +191,3 @@ spec:
         - containerPort: 14268
         - containerPort: 16686
         imagePullPolicy: IfNotPresent
-        env:
-        - name: COLLECTOR_ZIPKIN_HOST_PORT
-          value: "9411"
