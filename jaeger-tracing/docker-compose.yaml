@@ -31,14 +31,15 @@ services:
     - servicemesh
     environment:
     - SERVICE_NAME='rating-service'
-  zipkin:
-    image: openzipkin/zipkin
+  jaeger:
+    image: jaegertracing/all-in-one
+    environment:
+    - COLLECTOR_ZIPKIN_HOST_PORT=9411
     networks:
-      servicemesh:
-        aliases:
-        - zipkin
+    - servicemesh
     ports:
     - "9411:9411"
+    - "16686:16686"
 
 networks:
     servicemesh: {}
