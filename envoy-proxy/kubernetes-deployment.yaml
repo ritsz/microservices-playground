@@ -61,7 +61,7 @@ spec:
     spec:
       containers:
       - name: frontend-proxy
-        image: envoy-proxy_frontend-proxy:latest
+        image: frontend-proxy:latest
         ports:
         - containerPort: 8080
         - containerPort: 9901
@@ -89,7 +89,7 @@ spec:
     spec:
       containers:
       - name: film-service
-        image: envoy-proxy_film-service:latest
+        image: film-service:latest
         ports:
         - containerPort: 5000
         imagePullPolicy: IfNotPresent
@@ -116,7 +116,7 @@ spec:
     spec:
       containers:
       - name: rating-service
-        image: envoy-proxy_rating-service:latest
+        image: rating-service:latest
         ports:
         - containerPort: 6000
         imagePullPolicy: IfNotPresent

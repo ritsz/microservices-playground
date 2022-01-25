@@ -27,7 +27,7 @@ def init_tracer():
             },
             'local_agent': {
                 'reporting_host': "jaeger",
-                'reporting_port': 5775,
+                'reporting_port': 6831,
             },
             'logging': True,
         },
@@ -74,7 +74,7 @@ def post_film():
     app.logger.info('%s: Added film %s: %s', get_debug_string(), id, film_dict)
     return json.dumps(film_database)
 
-
+@tracer.trace()
 def add_film_rating_database(id, name, rating):
     headers = get_headers()
     app.logger.info("POST going to rating-service, header %s", repr(headers))

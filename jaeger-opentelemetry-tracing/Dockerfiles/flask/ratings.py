@@ -25,7 +25,7 @@ def init_tracer():
             },
             'local_agent': {
                 'reporting_host': "jaeger",
-                'reporting_port': 5775,
+                'reporting_port': 6831,
             },
             'logging': True,
         },

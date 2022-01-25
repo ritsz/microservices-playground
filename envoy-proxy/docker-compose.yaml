@@ -5,6 +5,7 @@ volumes:
 
 services:
   frontend-proxy:
+    image: frontend-proxy:latest
     build:
       context: Dockerfiles
       dockerfile: Dockerfile-envoyproxy
@@ -17,6 +18,7 @@ services:
     - "film-service"
     - "rating-service"
   film-service:
+    image: film-service:latest
     build:
       context: Dockerfiles
       dockerfile: Dockerfile-film
@@ -27,6 +29,7 @@ services:
     environment:
     - SERVICE_NAME='film-service'
   rating-service:
+    image: rating-service:latest
     build:
       context: Dockerfiles
       dockerfile: Dockerfile-rating

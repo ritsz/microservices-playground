@@ -79,7 +79,7 @@ spec:
     spec:
       containers:
       - name: frontend-proxy
-        image: jaeger-tracing_frontend-proxy:latest
+        image: frontend-proxy:latest
         ports:
         - containerPort: 8080
         - containerPort: 9901
@@ -107,7 +107,7 @@ spec:
     spec:
       containers:
       - name: film-service
-        image: jaeger-tracing_film-service:latest
+        image: film-service:latest
         ports:
         - containerPort: 5000
         imagePullPolicy: IfNotPresent
@@ -134,7 +134,7 @@ spec:
     spec:
       containers:
       - name: rating-service
-        image: jaeger-tracing_rating-service:latest
+        image: rating-service:latest
         ports:
         - containerPort: 6000
         imagePullPolicy: IfNotPresent

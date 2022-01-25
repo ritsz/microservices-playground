@@ -1,10 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM envoyproxy/envoy-alpine-dev:latest
-WORKDIR /fileService-docker
+FROM python:3.7
+RUN pip3 install -q Flask==1.1.1 requests py_zipkin==0.20.0
 
-RUN apk update && apk add py3-pip bash curl
-RUN pip3 install -q Flask==0.11.1 requests==2.18.4
-COPY ./flask/films.py /fileService-docker/films.py
-
-CMD [ "python3", "/fileService-docker/films.py"]
+WORKDIR /filmService-docker
+COPY ./flask/films.py /filmService-docker/films.py
+CMD [ "python3", "/filmService-docker/films.py"]

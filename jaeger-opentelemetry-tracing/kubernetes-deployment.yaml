@@ -51,11 +51,31 @@ spec:
   selector:
     app: jaeger-label
   ports:
-    - name: span-endpoint
+    - name: agent-zipkin-thrift-deprecated
+      protocol: UDP
+      port: 5775
+      targetPort: 5775
+    - name: serve-configs
+      protocol: UDP
+      port: 5778
+      targetPort: 5778
+    - name: agent-zipkin-thrift
+      protocol: UDP
+      port: 6831
+      targetPort: 6831
+    - name: agent-zipkin-thrift-binary
+      protocol: UDP
+      port: 6832
+      targetPort: 6832
+    - name: zipkin-span-endpoint
       protocol: TCP
       port: 9411
       targetPort: 9411
-    - name: ui
+    - name: collector-accept-thrift-directly
+      protocol: TCP
+      port: 14268
+      targetPort: 14268
+    - name: query-ui
       protocol: TCP
       port: 16686
       targetPort: 16686
@@ -79,7 +99,7 @@ spec:
     spec:
       containers:
       - name: frontend-proxy
-        image: jaeger-tracing_frontend-proxy:latest
+        image: frontend-proxy:latest
         ports:
         - containerPort: 8080
         - containerPort: 9901
@@ -107,7 +127,7 @@ spec:
     spec:
       containers:
       - name: film-service
-        image: jaeger-tracing_film-service:latest
+        image: film-service:latest
         ports:
         - containerPort: 5000
         imagePullPolicy: IfNotPresent
@@ -134,7 +154,7 @@ spec:
     spec:
       containers:
       - name: rating-service
-        image: jaeger-tracing_rating-service:latest
+        image: rating-service:latest
         ports:
         - containerPort: 6000
         imagePullPolicy: IfNotPresent
@@ -163,7 +183,12 @@ spec:
       - name: jaeger
         image: jaegertracing/all-in-one
         ports:
+        - containerPort: 5775
+        - containerPort: 5778
+        - containerPort: 6831
+        - containerPort: 6832
         - containerPort: 9411
+        - containerPort: 14268
         - containerPort: 16686
         imagePullPolicy: IfNotPresent
         env:
