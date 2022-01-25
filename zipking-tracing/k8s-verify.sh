@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-_curl='curl --connect-timeout 5 --max-time 10 --retry 5 --retry-max-time 40'
+_curl='curl --connect-timeout 5 --max-time 10 --retry 5 --retry-max-time 40 -vsA "Testing"'
 
 startup () {
 	docker-compose build
