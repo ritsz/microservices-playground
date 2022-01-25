@@ -1,0 +1,8 @@
+# syntax=docker/dockerfile:1
+
+FROM python:3.7
+RUN pip3 install -q Flask==1.1.1 requests jaeger-client Flask-Opentracing
+
+WORKDIR /ratingService-docker
+COPY ./flask/ratings.py /ratingService-docker/ratings.py
+CMD [ "python3", "/ratingService-docker/ratings.py"]

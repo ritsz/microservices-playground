@@ -1,0 +1,8 @@
+# syntax=docker/dockerfile:1
+
+FROM python:3.7
+RUN pip3 install -q Flask==1.1.1 requests jaeger-client Flask-Opentracing
+
+WORKDIR /filmService-docker
+COPY ./flask/films.py /filmService-docker/films.py
+CMD [ "python3", "/filmService-docker/films.py"]

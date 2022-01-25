@@ -1,0 +1,171 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-proxy
+spec:
+  selector:
+    app: frontend-proxy-label
+  ports:
+    - name: load-balancer
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: admin
+      protocol: TCP
+      port: 9901
+      targetPort: 9901
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: film-service
+spec:
+  selector:
+    app: film-service-label
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-service
+spec:
+  selector:
+    app: rating-service-label
+  ports:
+    - protocol: TCP
+      port: 6000
+      targetPort: 6000
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+spec:
+  selector:
+    app: jaeger-label
+  ports:
+    - name: span-endpoint
+      protocol: TCP
+      port: 9411
+      targetPort: 9411
+    - name: ui
+      protocol: TCP
+      port: 16686
+      targetPort: 16686
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-proxy-deployment
+  labels:
+    app: frontend-proxy-label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-proxy-label
+  template:
+    metadata:
+      labels:
+        app: frontend-proxy-label
+    spec:
+      containers:
+      - name: frontend-proxy
+        image: jaeger-tracing_frontend-proxy:latest
+        ports:
+        - containerPort: 8080
+        - containerPort: 9901
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SERVICE_NAME
+          value: "frontend-proxy"
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: film-service-deployment
+  labels:
+    app: film-service-label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: film-service-label
+  template:
+    metadata:
+      labels:
+        app: film-service-label
+    spec:
+      containers:
+      - name: film-service
+        image: jaeger-tracing_film-service:latest
+        ports:
+        - containerPort: 5000
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SERVICE_NAME
+          value: "film-service"
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rating-service-deployment
+  labels:
+    app: rating-service-label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rating-service-label
+  template:
+    metadata:
+      labels:
+        app: rating-service-label
+    spec:
+      containers:
+      - name: rating-service
+        image: jaeger-tracing_rating-service:latest
+        ports:
+        - containerPort: 6000
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SERVICE_NAME
+          value: "rating-service"
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger-deployment
+  labels:
+    app: jaeger-label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger-label
+  template:
+    metadata:
+      labels:
+        app: jaeger-label
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one
+        ports:
+        - containerPort: 9411
+        - containerPort: 16686
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: COLLECTOR_ZIPKIN_HOST_PORT
+          value: "9411"

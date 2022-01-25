@@ -1,0 +1,13 @@
+FROM envoyproxy/envoy-dev:latest
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y curl \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
+COPY ./config/envoy-proxy.yaml /etc/envoy-proxy.yaml
+RUN curl -Ls https://github.com/envoyproxy/misc/releases/download/jaegertracing-plugin/jaegertracing-plugin-centos.tar.gz \
+              | tar zxf - -C /usr/local/lib \
+         && mv /usr/local/lib/libjaegertracing.so.0.4.2 /usr/local/lib/libjaegertracing_plugin.so
+RUN chmod go+r /etc/envoy-proxy.yaml
+CMD ["/usr/local/bin/envoy", "-c", "/etc/envoy-proxy.yaml", "--service-cluster", "envoy-proxy"]
