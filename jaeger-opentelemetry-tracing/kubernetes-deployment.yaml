@@ -129,8 +129,15 @@ spec:
       - name: film-service
         image: film-service:latest
         ports:
-        - containerPort: 5000
+        - name: service-endpoint
+          containerPort: 5000
         imagePullPolicy: IfNotPresent
+        readinessProbe:
+          httpGet:
+            path: /management/readiness
+            port: service-endpoint
+          initialDelaySeconds: 15
+          periodSeconds: 15
         env:
         - name: SERVICE_NAME
           value: "film-service"
@@ -156,8 +163,15 @@ spec:
       - name: rating-service
         image: rating-service:latest
         ports:
-        - containerPort: 6000
+        - name: service-endpoint
+          containerPort: 6000
         imagePullPolicy: IfNotPresent
+        readinessProbe:
+          httpGet:
+            path: /management/readiness
+            port: service-endpoint
+          initialDelaySeconds: 15
+          periodSeconds: 15
         env:
         - name: SERVICE_NAME
           value: "rating-service"

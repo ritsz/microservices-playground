@@ -42,6 +42,11 @@ def log_request_info():
     app.logger.info('####\n\n %s Headers: %s\n\n####', get_debug_string(), get_headers())
 
 
+@app.route('/management/readiness')
+def readiness():
+    return 'Ready and Healthy', 200
+
+
 @app.route('/ratings')
 def get_ratings():
     film_name = request.args.get('name')
