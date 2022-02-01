@@ -13,6 +13,7 @@ services:
     - servicemesh
     ports:
     - "8080:8080"
+    - "8443:8443"
     - "9901:9901"
     depends_on:
     - "film-service"

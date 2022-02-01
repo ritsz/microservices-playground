@@ -54,6 +54,66 @@
                     port_value: 5000
       ```
 
+### TLS termination in Envoy
+* Envoy supports both TLS termination in listeners as well as TLS origination when making connections to upstream clusters.
+* Support is sufficient for Envoy to perform standard edge proxy duties for modern web services as well as to initiate connections with external services that have advanced TLS requirements (TLS1.2, SNI, etc.)
+* The validation context needs to be specified for the certificate verification to be enabled. The certificate/private-key can be provided as a file or as a string.
+  ```yaml
+  transport_socket:
+    name: envoy.transport_sockets.tls
+    typed_config:
+      "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+      common_tls_context:
+        tls_certificates:
+          - certificate_chain: {filename: "/etc/envoy-cert.pem"}
+            private_key: {filename: "/etc/envoy-private.pem"}
+  ```
+* This TLS endpoint is available on port `8443` of the frontend proxy. Connecting to this port, results in a TLS handshake and the frontend proxy sends it's certificate to the client.
+```
+  $ curl -kvs https://127.0.0.1:8443/films
+  *   Trying 127.0.0.1...
+  * TCP_NODELAY set
+  * Connected to 127.0.0.1 (127.0.0.1) port 8443 (#0)
+  * ALPN, offering h2
+  * ALPN, offering http/1.1
+  * successfully set certificate verify locations:
+  *   CAfile: /etc/ssl/cert.pem
+    CApath: none
+  * TLSv1.2 (OUT), TLS handshake, Client hello (1):
+  * TLSv1.2 (IN), TLS handshake, Server hello (2):
+  * TLSv1.2 (IN), TLS handshake, Certificate (11):
+  * TLSv1.2 (IN), TLS handshake, Server key exchange (12):
+  * TLSv1.2 (IN), TLS handshake, Server finished (14):
+  * TLSv1.2 (OUT), TLS handshake, Client key exchange (16):
+  * TLSv1.2 (OUT), TLS change cipher, Change cipher spec (1):
+  * TLSv1.2 (OUT), TLS handshake, Finished (20):
+  * TLSv1.2 (IN), TLS change cipher, Change cipher spec (1):
+  * TLSv1.2 (IN), TLS handshake, Finished (20):
+  * SSL connection using TLSv1.2 / ECDHE-RSA-CHACHA20-POLY1305
+  * ALPN, server did not agree to a protocol
+  * Server certificate:
+  *  subject: C=IN; ST=KA; L=BLR; O=acme.local; OU=na; CN=frontend-proxy; emailAddress=nobody@acme.local
+  *  start date: Jan 26 05:55:32 2022 GMT
+  *  expire date: Jan 26 05:55:32 2023 GMT
+  *  issuer: C=IN; ST=KA; L=BLR; O=acme.local; OU=na; CN=frontend-proxy; emailAddress=nobody@acme.local
+  *  SSL certificate verify result: self signed certificate (18), continuing anyway.
+  > GET /films HTTP/1.1
+  > Host: 127.0.0.1:8443
+  > User-Agent: curl/7.64.1
+  > Accept: */*
+  >
+  < HTTP/1.1 200 OK
+  < content-type: text/html; charset=utf-8
+  < content-length: 2
+  < server: envoy
+  < date: Tue, 01 Feb 2022 04:58:57 GMT
+  < x-envoy-upstream-service-time: 1
+  <
+  * Connection #0 to host 127.0.0.1 left intact
+  []* Closing connection 0
+```
+
+
 ### Metrics
 * `Envoy` exports metrics on the admin port configured in `envoy-proxy.yaml`.
 * The `/stats` endpoint exposes metrics for scraping by `statsd`.
