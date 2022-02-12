@@ -47,55 +47,55 @@
     root@eb8571087284:/$ mongosh -u root -p example
   ```
 * Get the list of DBs. Our application uses `login_db`, and `login_collection` collection
-```bash
-  test> show dbs
-  admin      102 kB
-  config     111 kB
-  local     73.7 kB
-  login_db  73.7 kB
+  ```bash
+    test> show dbs
+    admin      102 kB
+    config     111 kB
+    local     73.7 kB
+    login_db  73.7 kB
 
-  test> use login_db
-  switched to db login_db
-  login_db>
+    test> use login_db
+    switched to db login_db
+    login_db>
 
-  login_db> show collections
-  login_collection
-  login_db>
-```
+    login_db> show collections
+    login_collection
+    login_db>
+  ```
 * Query all the documents in this collection, using the empty `{}` query:
-```bash
-  login_db> db.login_collection.find({})
-  [
-  {
-    _id: ObjectId("61f97ec398943ce9f12dfc4f"),
-    user_id: '8807e121-d0da-4e21-9418-2bb1d6296ae5',
-    name: 'apple',
-    email: '',
-    profile_pic: '',
-    password: 'sha256$JbtGJwMCzbPUEqz1$96fe2facc13df50678b95f691c5c1c5d1f53a0a12a483cc14b94bb417e93ad8a',
-    permissions: 'Permissions.WRITE'
-  },
-  {
-    _id: ObjectId("61f97fc623363cb88047bff0"),
-    user_id: '5583836a-cafc-4d66-aa17-a96ff3b0b141',
-    name: 'root',
-    email: '',
-    profile_pic: '',
-    password: 'sha256$7WhdVqN7T9dlmI1o$5b86e5720fb1fcb4cfc2e256551ef32a12d7dc4038fc5a8034ffb12ad5b4b9d8',
-    permissions: 'Permissions.WRITE'
-  },
-  {
-    _id: ObjectId("61f9804423363cb88047bff5"),
-    user_id: 'bdf1d38a-275c-45bb-985c-b9cf120df781',
-    name: 'foobar',
-    email: '',
-    profile_pic: '',
-    password: 'sha256$L2yrvERH5SU111bH$e5558793817f26b9d6aece65cf6c47c4a879a0635298796edb3b10f7bfbe6472',
-    permissions: 'Permissions.WRITE'
-  }
-  ]
-  login_db>
-```
+  ```bash
+    login_db> db.login_collection.find({})
+    [
+    {
+      _id: ObjectId("61f97ec398943ce9f12dfc4f"),
+      user_id: '8807e121-d0da-4e21-9418-2bb1d6296ae5',
+      name: 'apple',
+      email: '',
+      profile_pic: '',
+      password: 'sha256$JbtGJwMCzbPUEqz1$96fe2facc13df50678b95f691c5c1c5d1f53a0a12a483cc14b94bb417e93ad8a',
+      permissions: 'Permissions.WRITE'
+    },
+    {
+      _id: ObjectId("61f97fc623363cb88047bff0"),
+      user_id: '5583836a-cafc-4d66-aa17-a96ff3b0b141',
+      name: 'root',
+      email: '',
+      profile_pic: '',
+      password: 'sha256$7WhdVqN7T9dlmI1o$5b86e5720fb1fcb4cfc2e256551ef32a12d7dc4038fc5a8034ffb12ad5b4b9d8',
+      permissions: 'Permissions.WRITE'
+    },
+    {
+      _id: ObjectId("61f9804423363cb88047bff5"),
+      user_id: 'bdf1d38a-275c-45bb-985c-b9cf120df781',
+      name: 'foobar',
+      email: '',
+      profile_pic: '',
+      password: 'sha256$L2yrvERH5SU111bH$e5558793817f26b9d6aece65cf6c47c4a879a0635298796edb3b10f7bfbe6472',
+      permissions: 'Permissions.WRITE'
+    }
+    ]
+    login_db>
+  ```
 * Flask login uses a `User` class that is derived from `UserMixin`.
 * Flask-login requires a User model with the following properties:
   * has an `is_authenticated()` method that returns True if the user has provided valid credentials
@@ -106,30 +106,30 @@
 * It's the reason you can call for example `is_authenticated` to check if login credentials provide is correct or not instead of having to write a method to do that yourself.
 * Flask-login also requires you to define a `user_loader` function which, given a user ID, returns the associated user object.
 * In the case of this application, the `user_loader` loads the user object from MongoDB.
-```python
-@login_manager.user_loader
-def load_user(user_id):
-    app.logger.info("Loading user_id %s", user_id)
-    return User.get(user_id)
-```
+  ```python
+  @login_manager.user_loader
+  def load_user(user_id):
+      app.logger.info("Loading user_id %s", user_id)
+      return User.get(user_id)
+  ```
 
 ### Testing session management
 * To test session management, we introduce a unprotected API for creating users at `/add-user`.
 * The `User` document is created and persisted into MongoDB.
 #### Adding User
 * Start with an empty collection:
-```bash
-  login_db> db.login_collection.drop({})
-  true
-  login_db> db.login_collection.find({})
+  ```bash
+    login_db> db.login_collection.drop({})
+    true
+    login_db> db.login_collection.find({})
 
-  login_db>
-```
+    login_db>
+  ```
 * Execute a REST API to add-user:
-```bash
-  curl http://localhost:8040/add-user\?username=foobar\&password=acme
-  56268fac-33d8-42af-aa22-6c1b7324155e%
-```
+  ```bash
+    curl http://localhost:8040/add-user\?username=foobar\&password=acme
+    56268fac-33d8-42af-aa22-6c1b7324155e%
+  ```
 * Logs show that the current user is anonymous and we add a user.
   ```
   New Request
@@ -146,21 +146,21 @@ def load_user(user_id):
   172.22.0.1 - - [12/Feb/2022 07:47:53] "GET /add-user?username=foobar&password=acme HTTP/1.1" 200 -
   ```
 * New user added in MongoDB
-```bash
-  login_db> db.login_collection.find({})
-  [
-    {
-      _id: ObjectId("620766298b6c52307ce86fed"),
-      user_id: '56268fac-33d8-42af-aa22-6c1b7324155e',
-      name: 'foobar',
-      email: '',
-      profile_pic: '',
-      password: 'sha256$3qHnpwNZppNMoHFV$ded82205f217dc4b29d3af553dd933a680063dd461fc30d9f2a30c6c473f2ba4',
-      permissions: 'Permissions.WRITE'
-    }
-  ]
-  login_db>
-```
+  ```bash
+    login_db> db.login_collection.find({})
+    [
+      {
+        _id: ObjectId("620766298b6c52307ce86fed"),
+        user_id: '56268fac-33d8-42af-aa22-6c1b7324155e',
+        name: 'foobar',
+        email: '',
+        profile_pic: '',
+        password: 'sha256$3qHnpwNZppNMoHFV$ded82205f217dc4b29d3af553dd933a680063dd461fc30d9f2a30c6c473f2ba4',
+        permissions: 'Permissions.WRITE'
+      }
+    ]
+    login_db>
+  ```
 #### User Login
 * Using the username/password, user logs in. A token and a cookie is returned to the client.
   ```
@@ -192,13 +192,13 @@ def load_user(user_id):
 
 * Token `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiZm9vYmFyIiwicGVybSI6IlBlcm1pc3Npb25zLldSSVRFIn0.8jw7-lIOtdwvHIsyACRCDyOH3B4zQJNfi7Z2orfMqos` is returned and a session cookie `.eJwtjjEOwzAIAP_iuZZsMBjymQgbrHZNmqnq35uhN99J90n7OuJ8pu19XPFI-8vTlggkuBspVwhsNguHTDLhAuJIsJogNZcqrA0VpzcsoBiuN25IXkW1u8RgimVCpE2DieddWOCI6qxCY1i3acUrS_F-ix0x3SPXGcf_hoFl2cyILrmBrWwGkHnW0RFaJYr0_QEbczcP.Ygdrjw.7gEyRBdZloRJmbmcHRB2kni0gpQ` is added to response header.
 * The token is created by the application and the client can set it in request headers to authorize API requests.
-```python
-  token = jwt.encode({'user': user.name, 'perm': user.permissions}, app.config['SECRET_KEY'])
-```
+  ```python
+    token = jwt.encode({'user': user.name, 'perm': user.permissions}, app.config['SECRET_KEY'])
+  ```
 * The current user is logged in and flask_login tracks this authenticated session using cookies.
-```python
-  login_user(user)
-```
+  ```python
+    login_user(user)
+  ```
 * From the logs, user login starts anonymous, but eventually after `login_user`, the current user is changed to the `user` object passed to `login_user` function.
   ```
   New Request
@@ -275,9 +275,9 @@ def load_user(user_id):
   * Closing connection 0
   ```
 * From the logs, we see that `user_loader` is called that loads the user object for which this session cookie was created. The session cookie maps to user_id `56268fac-33d8-42af-aa22-6c1b7324155e` which is our `foobar:acme` user.
-```
-[2022-02-12 08:12:53,830] INFO in app: Loading user_id 56268fac-33d8-42af-aa22-6c1b7324155e
-```
+  ```
+  [2022-02-12 08:12:53,830] INFO in app: Loading user_id 56268fac-33d8-42af-aa22-6c1b7324155e
+  ```
 * Then we see that the `current_user` is set to `foobar:acme` and the request is handled in that user's context.
   ```
   [2022-02-12 08:12:53,829] INFO in app:
