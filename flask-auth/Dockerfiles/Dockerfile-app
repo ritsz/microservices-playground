@@ -1,0 +1,8 @@
+# syntax=docker/dockerfile:1
+
+FROM python:3.7
+RUN pip3 install requests Flask Flask-Login oauthlib Authlib Werkzeug pymongo pyjwt
+
+WORKDIR /app
+COPY ./flask/* /app/
+CMD [ "/app/run.sh"]

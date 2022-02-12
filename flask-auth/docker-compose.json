@@ -1,0 +1,43 @@
+{
+  "version": "3.7",
+  "services": {
+    "auth-app": {
+      "container_name": "auth-app",
+      "image": "auth-app:latest",
+      "build": {
+        "context": "Dockerfiles",
+        "dockerfile": "Dockerfile-app"
+      },
+      "networks": [
+        "servicemesh"
+      ],
+      "ports": [
+        "8040:8040"
+      ],
+      "environment": [
+        "FN_CLIENT_ID=${FN_CLIENT_ID}",
+        "FN_CLIENT_SECRET=${FN_CLIENT_SECRET}"
+      ]
+    },
+    "mongo": {
+      "image": "mongo",
+      "container_name": "mongodb",
+      "restart": "always",
+      "networks": [
+        "servicemesh"
+      ],
+      "ports": [
+        "27017:27017"
+      ],
+      "environment": {
+        "MONGO_INITDB_ROOT_USERNAME": "root",
+        "MONGO_INITDB_ROOT_PASSWORD": "example",
+        "PUID": 1000,
+        "PGID": 1000
+      }
+    }
+  },
+  "networks": {
+    "servicemesh": {}
+  }
+}
