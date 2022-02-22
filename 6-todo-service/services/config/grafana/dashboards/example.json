@@ -59,7 +59,7 @@
       "targets": [
         {
           "$$hashKey": "object:214",
-          "expr": "rate(flask_http_request_duration_seconds_count{status=\"200\"}[30s])",
+          "expr": "rate(http_requests_total{code=\"200\"}[30s])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -153,7 +153,7 @@
       "targets": [
         {
           "$$hashKey": "object:766",
-          "expr": "sum(rate(flask_http_request_duration_seconds_count{status!=\"200\"}[30s]))",
+          "expr": "sum(rate(http_requests_total{code!=\"200\"}[30s]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -247,7 +247,7 @@
       "targets": [
         {
           "$$hashKey": "object:140",
-          "expr": "increase(flask_http_request_total[1m])",
+          "expr": "increase(http_requests_total[1m])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -340,7 +340,7 @@
       "targets": [
         {
           "$$hashKey": "object:146",
-          "expr": "rate(flask_http_request_duration_seconds_sum{status=\"200\"}[30s])\n/\nrate(flask_http_request_duration_seconds_count{status=\"200\"}[30s])",
+          "expr": "rate(http_request_duration_microseconds_sum{code=\"200\"}[30s])\n/\nrate(http_requests_total{code=\"200\"}[30s])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -434,7 +434,7 @@
       "targets": [
         {
           "$$hashKey": "object:426",
-          "expr": "histogram_quantile(0.5, rate(flask_http_request_duration_seconds_bucket{status=\"200\"}[30s]))",
+          "expr": "histogram_quantile(0.5, rate(http_request_duration_microseconds{code=\"200\"}[30s]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -522,7 +522,7 @@
       "targets": [
         {
           "$$hashKey": "object:638",
-          "expr": "process_resident_memory_bytes{job=\"example\"}",
+          "expr": "process_resident_memory_bytes",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "mem",
@@ -613,7 +613,7 @@
       "targets": [
         {
           "$$hashKey": "object:1079",
-          "expr": "increase(flask_http_request_duration_seconds_bucket{status=\"200\",le=\"0.25\"}[30s]) \n/ ignoring (le) increase(flask_http_request_duration_seconds_count{status=\"200\"}[30s])",
+          "expr": "increase(http_request_duration_microseconds{status=\"200\",le=\"250\"}[30s]) \n/ ignoring (le) increase(http_request_duration_microseconds_count{status=\"200\"}[30s])",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -707,7 +707,7 @@
       "targets": [
         {
           "$$hashKey": "object:426",
-          "expr": "histogram_quantile(0.9, rate(flask_http_request_duration_seconds_bucket{status=\"200\"}[30s]))",
+          "expr": "histogram_quantile(0.9, rate(http_request_duration_microseconds{status=\"200\"}[30s]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -793,7 +793,7 @@
       "targets": [
         {
           "$$hashKey": "object:638",
-          "expr": "rate(process_cpu_seconds_total{job=\"example\"}[30s])",
+          "expr": "rate(process_cpu_seconds_total[30s])",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "cpu",

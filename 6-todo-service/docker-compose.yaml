@@ -69,3 +69,15 @@ services:
     - "9090:9090"
     depends_on:
     - "frontend-proxy"
+
+  grafana:
+    image: grafana/grafana:5.1.0
+    volumes:
+      - ./services/config/grafana/config.ini:/etc/grafana/grafana.ini
+      - ./services/config/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/default.yaml
+      - ./services/config/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/default.yaml
+      - ./services/config/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
