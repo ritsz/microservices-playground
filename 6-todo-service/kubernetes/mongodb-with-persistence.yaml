@@ -28,6 +28,10 @@ spec:
       labels:
         app: mongodb-label
     spec:
+      volumes:
+        - name: mongodb-pv-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
       containers:
         - name: mongo
           image: mongo
@@ -41,6 +45,9 @@ spec:
           ports:
             - containerPort: 27017
           imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongodb-pv-storage
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
               value: "root"
