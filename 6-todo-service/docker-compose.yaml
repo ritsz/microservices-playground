@@ -5,7 +5,7 @@ networks:
 
 services:
   frontend-proxy:
-    image: ritsz/frontend-proxy:latest
+    image: frontend-proxy:latest
     build:
       context: services
       dockerfile: Dockerfile-envoyproxy
@@ -20,7 +20,7 @@ services:
     - "tasks-service"
 
   users-service:
-    image: ritsz/users-service:latest
+    image: users-service:latest
     build:
       context: services
       dockerfile: Dockerfile-users
@@ -32,7 +32,7 @@ services:
     - SERVICE_NAME='users-service'
 
   tasks-service:
-    image: ritsz/tasks-service:latest
+    image: tasks-service:latest
     build:
       context: services
       dockerfile: Dockerfile-tasks
