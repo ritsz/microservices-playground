@@ -1,0 +1,56 @@
+version: "3.7"
+
+networks:
+  servicemesh: {}
+
+services:
+  frontend-proxy:
+    image: frontend-proxy:latest
+    build:
+      context: services
+      dockerfile: Dockerfile-envoyproxy
+    networks:
+    - servicemesh
+    ports:
+    - "8080:8080"
+    - "8443:8443"
+    - "9901:9901"
+    depends_on:
+    - "users-service"
+    - "tasks-service"
+
+  users-service:
+    image: users-service:latest
+    build:
+      context: services
+      dockerfile: Dockerfile-users
+    networks:
+    - servicemesh
+    depends_on:
+    - "tasks-service"
+    environment:
+    - SERVICE_NAME='users-service'
+
+  tasks-service:
+    image: tasks-service:latest
+    build:
+      context: services
+      dockerfile: Dockerfile-tasks
+    networks:
+    - servicemesh
+    environment:
+    - SERVICE_NAME='tasks-service'
+
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    restart: always
+    networks:
+    - servicemesh
+    ports:
+    - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      PUID: 1000
+      PGID: 1000

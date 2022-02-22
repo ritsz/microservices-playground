@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-proxy
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend-proxy-label
+  ports:
+    - name: load-balancer
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: admin
+      protocol: TCP
+      port: 9901
+      targetPort: 9901
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+spec:
+  selector:
+    app: users-service-label
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tasks-service
+spec:
+  selector:
+    app: tasks-service-label
+  ports:
+    - protocol: TCP
+      port: 6000
+      targetPort: 6000
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-proxy-deployment
+  labels:
+    app: frontend-proxy-label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-proxy-label
+  template:
+    metadata:
+      labels:
+        app: frontend-proxy-label
+    spec:
+      containers:
+      - name: frontend-proxy
+        image: frontend-proxy:latest
+        ports:
+        - containerPort: 8080
+        - containerPort: 9901
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SERVICE_NAME
+          value: "frontend-proxy"
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service-deployment
+  labels:
+    app: users-service-label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-service-label
+  template:
+    metadata:
+      labels:
+        app: users-service-label
+    spec:
+      containers:
+      - name: users-service
+        image: users-service:latest
+        ports:
+        - containerPort: 8080
+        - containerPort: 9901
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SERVICE_NAME
+          value: "users-service"
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasks-service-deployment
+  labels:
+    app: tasks-service-label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tasks-service-label
+  template:
+    metadata:
+      labels:
+        app: tasks-service-label
+    spec:
+      containers:
+      - name: tasks-service
+        image: tasks-service:latest
+        ports:
+        - containerPort: 8080
+        - containerPort: 9901
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SERVICE_NAME
+          value: "tasks-service"
