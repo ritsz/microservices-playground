@@ -1,6 +1,9 @@
-from re import U
 from flask import Flask, abort, request, make_response, jsonify
+from flask_prometheus_metrics import register_metrics
+from prometheus_client import make_wsgi_app
 from pymongo import MongoClient
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.serving import run_simple
 import json
 import uuid
 
@@ -120,7 +123,7 @@ class Task():
         document = {
             'user': user_name
         }
-        app.logger.info('Deleting all tasks for user %s', user_name)
+        app.logger.info('Deleting all tasks-service for user %s', user_name)
         col = get_mongodb(name=DATABASE_NAME)
         return col.delete_many(document).deleted_count
     
@@ -132,7 +135,7 @@ class Task():
         document_update = {
             'status': True
         }
-        app.logger.info('Completing all tasks for user %s', user_name)
+        app.logger.info('Completing all tasks-service for user %s', user_name)
         col = get_mongodb(name=DATABASE_NAME)
         return col.update_many(document_filter, {'$set': document_update}).modified_count
 
@@ -141,7 +144,7 @@ class Task():
 def get_all_tasks_for_user():
     user_name = request.args.get('user')
     if user_name:
-        app.logger.info('Get all tasks for user %s', user_name)
+        app.logger.info('Get all tasks-service for user %s', user_name)
         all_tasks = Task.get_all_tasks_by_user_name(user_name)
         app.logger.info("Tasks %s", all_tasks)
         return make_response(
@@ -149,7 +152,7 @@ def get_all_tasks_for_user():
                 200,
             )
     else:
-        app.logger.info('Get all tasks.')
+        app.logger.info('Get all tasks-service.')
         all_tasks = Task.get_all_tasks()
         app.logger.info("Tasks %s", all_tasks)
         return make_response(
@@ -209,5 +212,12 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=6000, debug=True)
+    # app.run(host='0.0.0.0', port=6000, debug=True)
+    # provide app's version and deploy environment/config name to set a gauge metric
+    register_metrics(app, app_version="v0.1.2", app_config="staging")
+
+    # Plug metrics WSGI app to your main app with dispatcher
+    dispatcher = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+
+    run_simple(hostname="0.0.0.0", port=6000, application=dispatcher, use_debugger=True)
     app.logger.info("Task Service has started")

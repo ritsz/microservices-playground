@@ -1,6 +1,9 @@
-from asyncio import tasks
 from flask import Flask, abort, request, make_response, jsonify
+from flask_prometheus_metrics import register_metrics
+from prometheus_client import make_wsgi_app
 from pymongo import MongoClient
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.serving import run_simple
 import json
 import requests
 import uuid
@@ -27,14 +30,14 @@ class User():
         self.id = id
         self.name = name
         self.task_list = list() if task_list==None else task_list
-    
+
     @staticmethod
     def get_by_name(user_name):
         col = get_mongodb(name=DATABASE_NAME)
         user = col.find_one({'user_name': user_name})
         if not user:
             return None
-        
+
         app.logger.info("Got user %s", user)
 
         user = User(
@@ -43,7 +46,7 @@ class User():
             task_list=user.get('task_list', list())
         )
         return user
-    
+
     @staticmethod
     def create(user_name):
         user = User.get_by_name(user_name)
@@ -67,7 +70,7 @@ class User():
             return None
         tasks = user.task_list
         tasks.append(task_id)
-        
+
         document_filter = {
             'user_name': user_name
         }
@@ -91,7 +94,7 @@ class User():
         app.logger.info('Deleting %s from database', document)
         col = get_mongodb(name=DATABASE_NAME)
         return col.delete_one(document).acknowledged
-        
+
 
 @app.route('/users/<name>', methods=['GET'])
 def get_user(name):
@@ -103,7 +106,7 @@ def get_user(name):
                 jsonify(
                     {"user_name": user.name},
                     {"user_id": user.id},
-                    {"tasks": user.task_list}
+                    {"tasks-service": user.task_list}
                 ),
                 200,
             )
@@ -151,9 +154,9 @@ def delete_user(name):
     user = User.get_by_name(name)
     if not user:
         return abort(404)
-    
+
     response = requests.delete('http://tasks-service:6000/tasks?user={}'.format(name)).json().get("deleted")
-    app.logger.info("Deleted %s tasks.", response)
+    app.logger.info("Deleted %s tasks-service.", response)
     if len(user.task_list) != response:
         app.logger.error("Mismatch between 2 services")
     app.logger.info('Deleting user %s', name)
@@ -166,12 +169,12 @@ def delete_user(name):
         )
 
 
-@app.route('/')
-def index():
-    app.logger.info('Main Page')
-    return "Welcome to User Service."
-
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # provide app's version and deploy environment/config name to set a gauge metric
+    register_metrics(app, app_version="v0.1.2", app_config="staging")
+
+    # Plug metrics WSGI app to your main app with dispatcher
+    dispatcher = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
+
+    run_simple(hostname="0.0.0.0", port=5000, application=dispatcher, use_debugger=True)
     app.logger.info("User Service has started")

@@ -1,8 +1,0 @@
-# syntax=docker/dockerfile:1
-
-FROM python:3.7
-RUN pip3 install -q Flask requests pymongo
-
-WORKDIR /tasks-service-docker
-COPY ./flask/tasks/tasks_service.py /tasks-service-docker/tasks_service.py
-CMD [ "python3", "/tasks-service-docker/tasks_service.py"]

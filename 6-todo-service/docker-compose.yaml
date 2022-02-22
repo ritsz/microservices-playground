@@ -5,6 +5,7 @@ networks:
 
 services:
   frontend-proxy:
+    container_name: frontend-proxy
     image: frontend-proxy:latest
     build:
       context: services
@@ -20,10 +21,11 @@ services:
     - "tasks-service"
 
   users-service:
+    container_name: users-service
     image: users-service:latest
     build:
-      context: services
-      dockerfile: Dockerfile-users
+      context: services/flask/users-service
+      dockerfile: Dockerfile
     networks:
     - servicemesh
     depends_on:
@@ -32,10 +34,11 @@ services:
     - SERVICE_NAME='users-service'
 
   tasks-service:
+    container_name: tasks-service
     image: tasks-service:latest
     build:
-      context: services
-      dockerfile: Dockerfile-tasks
+      context: services/flask/tasks-service
+      dockerfile: Dockerfile
     networks:
     - servicemesh
     environment:
@@ -54,3 +57,15 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
       PUID: 1000
       PGID: 1000
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.2.1
+    volumes:
+    - ./services/config/prometheus-config.yaml:/etc/prometheus/prometheus.yml
+    networks:
+    - servicemesh
+    ports:
+    - "9090:9090"
+    depends_on:
+    - "frontend-proxy"
