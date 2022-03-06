@@ -20,7 +20,7 @@ services:
       driver: "fluentd"
       options:
         fluentd-address: localhost:24224
-        tag: httpd.access
+        tag: frontend-proxy
     depends_on:
     - "users-service"
     - "tasks-service"
@@ -37,7 +37,7 @@ services:
       driver: "fluentd"
       options:
         fluentd-address: localhost:24224
-        tag: httpd.access
+        tag: users-service
     depends_on:
     - "tasks-service"
     environment:
@@ -55,7 +55,7 @@ services:
       driver: "fluentd"
       options:
         fluentd-address: localhost:24224
-        tag: httpd.access
+        tag: tasks-service
     depends_on:
     - "fluentd"
     environment:
@@ -71,9 +71,11 @@ services:
       driver: "fluentd"
       options:
         fluentd-address: localhost:24224
-        tag: httpd.access
+        tag: mongodb
     ports:
     - 27017:27017
+    depends_on:
+    - "fluentd"
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
