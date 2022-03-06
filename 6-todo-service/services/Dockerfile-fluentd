@@ -1,0 +1,2 @@
+FROM fluent/fluentd:v0.12
+COPY config/fluentd/fluent.conf /fluentd/etc/fluent.conf 

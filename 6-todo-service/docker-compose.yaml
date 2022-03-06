@@ -16,6 +16,11 @@ services:
     - "8080:8080"
     - "8443:8443"
     - "9901:9901"
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: httpd.access
     depends_on:
     - "users-service"
     - "tasks-service"
@@ -28,6 +33,11 @@ services:
       dockerfile: Dockerfile
     networks:
     - servicemesh
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: httpd.access
     depends_on:
     - "tasks-service"
     environment:
@@ -41,6 +51,13 @@ services:
       dockerfile: Dockerfile
     networks:
     - servicemesh
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: httpd.access
+    depends_on:
+    - "fluentd"
     environment:
     - SERVICE_NAME='tasks-service'
 
@@ -50,6 +67,11 @@ services:
     restart: always
     networks:
     - servicemesh
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: httpd.access
     ports:
     - 27017:27017
     environment:
@@ -57,6 +79,24 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
       PUID: 1000
       PGID: 1000
+
+  fluentd:
+    container_name: fluentd
+    build:
+      context: services
+      dockerfile: Dockerfile-fluentd
+    volumes:
+    - ./output:/output 
+    networks:
+    - servicemesh
+    ports:
+    - "24224:24224"
+    - "24224:24224/udp"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 100m
+        max-file: "5"
 
   prometheus:
     container_name: prometheus
@@ -72,12 +112,41 @@ services:
 
   grafana:
     image: grafana/grafana:5.1.0
+    container_name: grafana
     volumes:
-      - ./services/config/grafana/config.ini:/etc/grafana/grafana.ini
-      - ./services/config/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/default.yaml
-      - ./services/config/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/default.yaml
-      - ./services/config/grafana/dashboards:/var/lib/grafana/dashboards
+    - ./services/config/grafana/config.ini:/etc/grafana/grafana.ini
+    - ./services/config/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/default.yaml
+    - ./services/config/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/default.yaml
+    - ./services/config/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+    - servicemesh
     ports:
-      - 3000:3000
+    - 3000:3000
     depends_on:
-      - prometheus
+    - prometheus
+
+  # elasticsearch: # port 9200
+  #   image: elasticsearch:5.3.0
+  #   container_name: elasticsearch
+  #   networks:
+  #   - servicemesh
+  #   environment:
+  #   - node.name=elasticsearch
+  #   - cluster.initial_master_nodes=elasticsearch
+  #   - bootstrap.memory_lock=true
+  #   - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #
+  # kibana:
+  #   image: kibana:5.3.0
+  #   container_name: kibana
+  #   networks:
+  #   - servicemesh
+  #   ports:
+  #   - "5601:5601"
+  #   environment:
+  #     ELASTICSEARCH_URL: http://elasticsearch:9200
+  #     ELASTICSEARCH_HOSTS: http://elasticsearch:9200
