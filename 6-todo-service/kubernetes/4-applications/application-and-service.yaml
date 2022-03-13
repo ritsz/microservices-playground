@@ -11,6 +11,10 @@ spec:
       protocol: TCP
       port: 8080
       targetPort: 8080
+    - name: https-load-balancer
+      protocol: TCP
+      port: 8443
+      targetPort: 8443
     - name: admin
       protocol: TCP
       port: 9901
@@ -66,9 +70,27 @@ spec:
         - containerPort: 8080
         - containerPort: 9901
         imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: envoy-config-all
+          mountPath: "/etc/envoy-config"
         env:
         - name: SERVICE_NAME
           value: "frontend-proxy"
+      volumes:
+      - name: envoy-config-all
+        projected:
+          sources:
+          - secret:
+              name: envoy-selfsigned-cert-tls
+              items:
+              - key: tls.crt
+                path: envoy-cert.pem
+              - key: tls.key
+                path: envoy-private.pem
+          - configMap:
+              name: envoy-config
+
+          
 ---
 
 apiVersion: apps/v1

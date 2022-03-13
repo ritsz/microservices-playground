@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: envoy-selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: envoy-selfsigned
+spec:
+  dnsNames:
+    - todo-service.example.com
+    - localhost
+  secretName: envoy-selfsigned-cert-tls
+  issuerRef:
+    name: envoy-selfsigned
