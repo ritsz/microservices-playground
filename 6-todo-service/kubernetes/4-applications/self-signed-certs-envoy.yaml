@@ -1,17 +1,60 @@
+#
+# Create a SelfSigned Cluster Issuer
+#
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+
+#
+# Create a self signed certificate.
+# This acts like the root CA.
+#
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: root-ca
+  namespace: applications
+spec:
+  isCA: true
+  commonName: root-ca
+  secretName: root-ca-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+
+#
+# Create an issuer from the root CA above.
+#
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: envoy-selfsigned
   namespace: applications
 spec:
-  selfSigned: {}
+  ca:
+    secretName: root-ca-secret
 ---
+
+#
+# From the new issuer, create a certificate for Envoy
+# This certificate will be signed by our root CA created above.
+#
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: envoy-selfsigned
+  name: envoy-selfsigned-certificate
   namespace: applications
 spec:
+  commonName: frontend-proxy
   dnsNames:
     - todo-service.example.com
     - localhost

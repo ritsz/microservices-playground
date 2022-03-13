@@ -8,6 +8,10 @@ create_kubernetes_cluster () {
 
 create_images () {
 	docker-compose build
+}
+
+
+load_images () {
 	minikube images load frontend-proxy users-service tasks-service
 	minikube images ls
 }
@@ -47,10 +51,11 @@ start_applications () {
 
 startup () {
 	echo "[Step-1] Create kubernetes cluster."
-	create_kubernetes_cluster
+	# create_kubernetes_cluster
 
 	echo "[Step-2] Build and load images."
 	create_images	
+	# load_images
 
 	echo "[Step-3] Deploy application in kubernetes cluster."
 	start_applications
