@@ -6,12 +6,12 @@ networks:
 services:
   frontend-proxy:
     container_name: frontend-proxy
-    image: frontend-proxy:latest
+    image: envoyproxy/envoy:v1.21-latest
     build:
       context: services
       dockerfile: Dockerfile-envoyproxy
     volumes:
-    - ./config/envoy:/etc/envoy-config 
+    - ./config/envoy:/etc/envoy 
     networks:
     - servicemesh
     ports:

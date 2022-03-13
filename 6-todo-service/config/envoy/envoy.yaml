@@ -68,8 +68,8 @@ static_resources:
           "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           common_tls_context:
             tls_certificates:
-              - certificate_chain: {filename: "/etc/envoy-config/envoy-cert.pem"}
-                private_key: {filename: "/etc/envoy-config/envoy-private.pem"}
+              - certificate_chain: {filename: "/etc/envoy/envoy-cert.pem"}
+                private_key: {filename: "/etc/envoy/envoy-private.pem"}
 
   clusters:
   - name: users-service-cluster
