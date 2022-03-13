@@ -31,9 +31,14 @@ spec:
   selector:
     app: users-service-label
   ports:
-    - protocol: TCP
+    - name: direct
+      protocol: TCP
       port: 8080
       targetPort: 8080
+    - name: sidecar-proxy
+      protocol: TCP
+      port: 80
+      targetPort: 80
 ---
 
 apiVersion: v1
@@ -45,9 +50,14 @@ spec:
   selector:
     app: tasks-service-label
   ports:
-    - protocol: TCP
+    - name: direct
+      protocol: TCP
       port: 8080
       targetPort: 8080
+    - name: sidecar-proxy
+      protocol: TCP
+      port: 80
+      targetPort: 80
 ---
 
 apiVersion: apps/v1
@@ -69,14 +79,14 @@ spec:
     spec:
       containers:
       - name: frontend-proxy
-        image: frontend-proxy:latest
+        image: envoyproxy/envoy:v1.21-latest
         ports:
         - containerPort: 8080
         - containerPort: 9901
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: envoy-config-all
-          mountPath: "/etc/envoy-config"
+          mountPath: "/etc/envoy"
         env:
         - name: SERVICE_NAME
           value: "frontend-proxy"
@@ -93,8 +103,6 @@ spec:
                 path: envoy-private.pem
           - configMap:
               name: envoy-config
-
-          
 ---
 
 apiVersion: apps/v1
@@ -123,6 +131,19 @@ spec:
         env:
         - name: SERVICE_NAME
           value: "users-service"
+      - name: users-service-sidecar
+        image: envoyproxy/envoy:v1.21-latest
+        ports:
+        - containerPort: 80
+        - containerPort: 9901
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: sidecar-config
+          mountPath: "/etc/envoy"
+      volumes:
+      - name: sidecar-config
+        configMap:
+          name: sidecar-config
 ---
 
 apiVersion: apps/v1
@@ -151,3 +172,16 @@ spec:
         env:
         - name: SERVICE_NAME
           value: "tasks-service"
+      - name: tasks-service-sidecar
+        image: envoyproxy/envoy:v1.21-latest
+        ports:
+        - containerPort: 80
+        - containerPort: 9901
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: sidecar-config
+          mountPath: "/etc/envoy"
+      volumes:
+      - name: sidecar-config
+        configMap:
+          name: sidecar-config

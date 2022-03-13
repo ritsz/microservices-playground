@@ -135,7 +135,7 @@ def add_user_task(name):
         'user': name,
         'desc': desc
     }
-    response = requests.post('http://tasks-service:6000/tasks', json=task)
+    response = requests.post('http://tasks-service:80/tasks', json=task)
     task_id = response.json().get('task_id')
     app.logger.info("Added task %s", task_id)
     count = User.update_task_list(user_name=name, task_id=task_id)
@@ -155,7 +155,7 @@ def delete_user(name):
     if not user:
         return abort(404)
 
-    response = requests.delete('http://tasks-service:6000/tasks?user={}'.format(name)).json().get("deleted")
+    response = requests.delete('http://tasks-service:80/tasks?user={}'.format(name)).json().get("deleted")
     app.logger.info("Deleted %s tasks-service.", response)
     if len(user.task_list) != response:
         app.logger.error("Mismatch between 2 services")
