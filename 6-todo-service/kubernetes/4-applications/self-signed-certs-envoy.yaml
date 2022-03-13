@@ -2,6 +2,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: envoy-selfsigned
+  namespace: applications
 spec:
   selfSigned: {}
 ---
@@ -9,6 +10,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: envoy-selfsigned
+  namespace: applications
 spec:
   dnsNames:
     - todo-service.example.com
