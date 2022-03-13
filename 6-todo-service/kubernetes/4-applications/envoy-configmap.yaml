@@ -91,7 +91,7 @@ data:
                 address:
                   socket_address:
                     address: users-service
-                    port_value: 5000
+                    port_value: 8080
       - name: tasks-service-cluster
         connect_timeout: 0.25s
         type: STRICT_DNS
@@ -104,4 +104,4 @@ data:
                 address:
                   socket_address:
                     address: tasks-service
-                    port_value: 6000
+                    port_value: 8080

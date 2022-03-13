@@ -176,5 +176,5 @@ if __name__ == '__main__':
     # Plug metrics WSGI app to your main app with dispatcher
     dispatcher = DispatcherMiddleware(app.wsgi_app, {"/metrics": make_wsgi_app()})
 
-    run_simple(hostname="0.0.0.0", port=5000, application=dispatcher, use_debugger=True)
+    run_simple(hostname="0.0.0.0", port=8080, application=dispatcher, use_debugger=True)
     app.logger.info("User Service has started")
