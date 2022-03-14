@@ -3,7 +3,11 @@
 _curl='curl --insecure'
 
 create_kubernetes_cluster () {
-	minikube start
+	gcloud container clusters get-credentials cluster-1 --zone asia-southeast1-a --project applied-chalice-342017
+
+	kubectl config use-context gke_applied-chalice-342017_asia-southeast1-a_cluster-1
+
+	gcloud auth configure-docker
 }
 
 create_images () {
@@ -12,8 +16,8 @@ create_images () {
 
 
 load_images () {
-	minikube images load frontend-proxy users-service tasks-service
-	minikube images ls
+	docker push gcr.io/applied-chalice-342017/users-service
+	docker push gcr.io/applied-chalice-342017/tasks-service
 }
 
 start_observability () {
@@ -32,6 +36,8 @@ create_certificates () {
 	kubectl rollout status -w deployments/cert-manager -n cert-manager 
 
 	sleep 10
+
+	kubectl apply -f kubernetes/3-certificates/cert-manager-test.yaml
 }
 
 start_applications () {
@@ -39,23 +45,22 @@ start_applications () {
 	
 	create_certificates
 
+	kubectl apply -f kubernetes/4-applications/envoy-configmap.yaml
 	kubectl apply -f kubernetes/4-applications
 
 	kubectl rollout status -w deployments/frontend-proxy-deployment -n applications
 	kubectl rollout status -w deployments/mongodb-deployment -n applications
-
-	minikube service frontend-proxy -n applications --url=true 
 
 	sleep 10
 }
 
 startup () {
 	echo "[Step-1] Create kubernetes cluster."
-	# create_kubernetes_cluster
+	create_kubernetes_cluster
 
 	echo "[Step-2] Build and load images."
 	create_images	
-	# load_images
+	load_images
 
 	echo "[Step-3] Deploy application in kubernetes cluster."
 	start_applications
@@ -70,22 +75,22 @@ checks () {
 
 	kubectl get all -n applications
 
-	$_curl -v -X POST http://localhost:8080/users/foo
-	$_curl -v -X POST http://localhost:8080/users/foo/task --data "{'desc' : 'This is a verification and integration task' }"
-	$_curl -v -X POST http://localhost:8080/users/foo/task --data "{'desc' : 'This is another simple task' }"
+	$_curl -v -X POST http://34.124.154.234:8080/users/foo
+	$_curl -v -X POST http://34.124.154.234:8080/users/foo/task --data "{'desc' : 'This is a verification and integration task' }"
+	$_curl -v -X POST http://34.124.154.234:8080/users/foo/task --data "{'desc' : 'This is another simple task' }"
 
-	$_curl -v -X POST http://localhost:8080/users/bar
-	$_curl -v -X POST http://localhost:8080/users/bar/task --data "{'desc' : 'This is user-2's task' }"
+	$_curl -v -X POST http://34.124.154.234:8080/users/bar
+	$_curl -v -X POST http://34.124.154.234:8080/users/bar/task --data "{'desc' : 'This is user-2's task' }"
 
-	$_curl -v -X GET https://localhost:8443/users
-	$_curl -v -X GET https://localhost:8443/tasks
+	$_curl -v -X GET https://34.124.154.234:8443/users
+	$_curl -v -X GET https://34.124.154.234:8443/tasks
 
-	$_curl -v -X POST https://localhost:8443/tasks/complete?user=foo
-	$_curl -v -X GET https://localhost:8443/tasks
+	$_curl -v -X POST https://34.124.154.234:8443/tasks/complete?user=foo
+	$_curl -v -X GET https://34.124.154.234:8443/tasks
 
-	$_curl -v -X DELETE https://localhost:8443/users/foo
-	$_curl -v -X GET https://localhost:8443/users
-	$_curl -v -X GET https://localhost:8443/tasks
+	$_curl -v -X DELETE https://34.124.154.234:8443/users/foo
+	$_curl -v -X GET https://34.124.154.234:8443/users
+	$_curl -v -X GET https://34.124.154.234:8443/tasks
 	
 	echo "### Checks done ###"
 }
@@ -93,7 +98,6 @@ checks () {
 cleanup () {
 	echo "### CLEANUP ###"
 	# kubectl delete -f kubernetes/namespace.yaml
-	# minikube delete
 	echo "### DONE ###"
 }
 

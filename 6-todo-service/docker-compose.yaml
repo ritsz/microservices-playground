@@ -7,9 +7,6 @@ services:
   frontend-proxy:
     container_name: frontend-proxy
     image: envoyproxy/envoy:v1.21-latest
-    build:
-      context: services
-      dockerfile: Dockerfile-envoyproxy
     volumes:
     - ./config/envoy:/etc/envoy 
     networks:
@@ -29,7 +26,7 @@ services:
 
   users-service:
     container_name: users-service
-    image: users-service:latest
+    image: gcr.io/applied-chalice-342017/users-service:latest
     build:
       context: services/flask/users-service
       dockerfile: Dockerfile
@@ -47,7 +44,7 @@ services:
 
   tasks-service:
     container_name: tasks-service
-    image: tasks-service:latest
+    image: gcr.io/applied-chalice-342017/tasks-service:latest
     build:
       context: services/flask/tasks-service
       dockerfile: Dockerfile
