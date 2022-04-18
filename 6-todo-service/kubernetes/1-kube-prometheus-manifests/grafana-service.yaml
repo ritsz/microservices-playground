@@ -9,6 +9,9 @@ metadata:
   name: grafana
   namespace: monitoring
 spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: grafana
   ports:
   - name: http
     port: 3000
