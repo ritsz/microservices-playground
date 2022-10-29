@@ -16,6 +16,8 @@ import com.example.fileservice.exception.FileServiceException;
 import com.example.fileservice.model.FileEntity;
 import com.example.fileservice.model.FileInfo;
 import com.example.fileservice.repository.FileRepository;
+import com.google.common.hash.HashFunction;
+import com.google.common.io.Files;
 
 import io.minio.ObjectWriteResponse;
 import lombok.AllArgsConstructor;
@@ -31,33 +33,39 @@ public class FileService {
     @Autowired
     MinioService minioService;
 
-    public FileEntity create(MultipartFile file) throws NoSuchAlgorithmException, IOException {
+    public FileInfo create(MultipartFile file) throws NoSuchAlgorithmException, IOException {
         FileEntity entity = getFileEntity(file);
         log.info("Saving entity: {}", entity);
         FileEntity saved = findBySha256(entity.getSha256());
+        Long timestamp = System.currentTimeMillis();
         if (saved != null) {
             log.info("Updating using existing record: {}", saved);
-            saved.setFileName(entity.getFileName());
-            saved.setLastUploadTime(entity.getLastUploadTime());
-            return fileRepository.save(saved);
+            entity.setSavedFileName(saved.getSavedFileName());
+            entity.setFirstUploadTime(saved.getFirstUploadTime());
+            entity.setLastUploadTime(timestamp);
+            entity.setBucketName(saved.getBucketName());
+            entity.setEtag(saved.getEtag());
+            entity.setRegion(saved.getRegion());
+            entity.setVersionId(saved.getVersionId());
+            entity.setUploadStatus(FileInfo.UploadStatus.DONE.toString());
+            return convert(fileRepository.save(entity));
         } else {
             log.info("Adding new record: {}", entity);
-//            ObjectWriteResponse response = minioService.uploadFile(file.getOriginalFilename(), file.getBytes());
-            Long timestamp = System.currentTimeMillis();
+            ObjectWriteResponse response = minioService.uploadFile(entity.getSavedFileName(), file.getBytes());
             entity.setFirstUploadTime(timestamp);
             entity.setLastUploadTime(timestamp);
-//            entity.setBucketName(response.bucket());
-//            entity.setEtag(response.etag());
-//            entity.setRegion(response.region());
-//            entity.setVersionId(response.versionId());
-//            entity.setStatus(FileInfo.UploadStatus.DONE.toString());
-            return fileRepository.save(entity);
+            entity.setBucketName(response.bucket());
+            entity.setEtag(response.etag());
+            entity.setRegion(response.region());
+            entity.setVersionId(response.versionId());
+            entity.setUploadStatus(FileInfo.UploadStatus.DONE.toString());
+            return convert(fileRepository.save(entity));
         }
     }
 
-    public FileEntity findById(UUID id) {
+    public FileInfo findById(UUID id) {
         if (fileRepository.existsById(id)) {
-            return fileRepository.findById(id).get();
+            return convert(fileRepository.findById(id).get());
         }
         throw new FileServiceException("Not found", HttpStatus.NOT_FOUND);
     }
@@ -68,13 +76,30 @@ public class FileService {
     }
 
     private FileEntity getFileEntity(MultipartFile file) throws NoSuchAlgorithmException, IOException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(file.getBytes());
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        String hash = new String(md.digest(file.getBytes()));
         FileEntity entity = new FileEntity();
-        entity.setFileName(file.getOriginalFilename());
-        entity.setSha256(hash.toString());
+        entity.setOriginalFileName(file.getOriginalFilename());
+        entity.setSavedFileName(UUID.randomUUID().toString());
+        entity.setSha256(hash);
         entity.setUploadStatus(FileInfo.UploadStatus.INPROGRESS.toString());
         entity.setFileSize(file.getSize());
         return entity;
+    }
+
+    private FileInfo convert(FileEntity entity) {
+        FileInfo info = new FileInfo();
+        info.setId(entity.getId());
+        info.setFileName(entity.getOriginalFileName());
+        info.setSha256(entity.getSha256());
+        info.setUploadStatus(FileInfo.UploadStatus.valueOf(entity.getUploadStatus()));
+        info.setFileSize(entity.getFileSize());
+        info.setFirstUploadTime(entity.getFirstUploadTime());
+        info.setLastUploadTime(entity.getLastUploadTime());
+        info.setBucketName(entity.getBucketName());
+        info.setEtag(entity.getEtag());
+        info.setRegion(entity.getRegion());
+        info.setVersionId(entity.getVersionId());
+        return info;
     }
 }

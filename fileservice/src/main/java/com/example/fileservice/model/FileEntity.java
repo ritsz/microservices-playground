@@ -25,7 +25,8 @@ public class FileEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    String fileName;
+    String savedFileName;
+    String originalFileName;
     String bucketName;
     String etag;
     String region;
@@ -34,7 +35,6 @@ public class FileEntity {
     Long lastUploadTime;
     String sha256;
     String uploadStatus;
-    String status;
     Long fileSize;
 
     public FileEntity() {
