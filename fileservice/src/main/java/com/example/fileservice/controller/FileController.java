@@ -3,6 +3,7 @@ package com.example.fileservice.controller;
 import static com.example.fileservice.UriPaths.DOMAIN_ROOT;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.fileservice.fileservice.FileService;
 import com.example.fileservice.fileservice.MinioService;
+import com.example.fileservice.model.FileEntity;
 import com.example.fileservice.model.FileInfo;
 
 import lombok.AllArgsConstructor;
@@ -33,8 +35,9 @@ public class FileController {
     MinioService minioService;
 
     @PostMapping
-    public FileInfo uploadFile(@RequestParam("file") MultipartFile multipartFile) throws IOException {
+    public FileEntity uploadFile(@RequestParam("file") MultipartFile multipartFile)
+        throws IOException, NoSuchAlgorithmException {
         minioService.uploadFile(multipartFile.getOriginalFilename(), multipartFile.getBytes());
-        return new FileInfo();
+        return fileService.create(multipartFile);
     }
 }

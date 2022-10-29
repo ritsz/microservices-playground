@@ -17,22 +17,15 @@ public class FileInfo {
         DONE
     }
 
-    public enum AnalysisStatus {
-        FAILED,
-        INPROGRESS,
-        DONE
-    }
-
     UUID id;
     String fileName;
     String bucketName;
     String etag;
     String region;
     String versionId;
-    String firstUploadTime;
-    String lastUploadTime;
+    Long firstUploadTime;
+    Long lastUploadTime;
     String sha256;
+    Long fileSize;
     UploadStatus uploadStatus;
-    AnalysisStatus status;
-
 }

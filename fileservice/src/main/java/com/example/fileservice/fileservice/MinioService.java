@@ -34,7 +34,7 @@ public class MinioService {
         configuration = minioConfiguration;
     }
 
-    public void uploadFile(String name, byte[] content) {
+    public ObjectWriteResponse uploadFile(String name, byte[] content) {
         MinioClient minioClient = minioClient();
 
         log.info("Creating a bucket");
@@ -53,6 +53,7 @@ public class MinioService {
                     .filename(file.getAbsolutePath())
                     .build());
             log.info("Response: {}", response);
+            return response;
         } catch (Exception ex) {
             log.error("Could not upload file: {}", name);
             throw new FileServiceException(ex.getLocalizedMessage());
