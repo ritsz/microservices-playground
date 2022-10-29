@@ -13,6 +13,7 @@ import com.example.fileservice.configuration.MinioConfiguration;
 import com.example.fileservice.exception.FileServiceException;
 
 import io.minio.BucketExistsArgs;
+import io.minio.DownloadObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -53,12 +54,35 @@ public class MinioService {
                     .filename(file.getAbsolutePath())
                     .build());
             log.info("Response: {}", response);
+            file.delete();
             return response;
         } catch (Exception ex) {
             log.error("Could not upload file: {}", name);
             throw new FileServiceException(ex.getLocalizedMessage());
         }
+    }
 
+    public File downloadFile(String originalFileName, String savedFileName) {
+        File file = new File("/tmp/" + originalFileName);
+        file.canWrite();
+        file.canRead();
+        if (file.exists()) {
+            log.info("Deleting {}", file.getAbsolutePath());
+            file.delete();
+        }
+        try {
+            MinioClient minioClient = minioClient();
+            minioClient.downloadObject(
+                DownloadObjectArgs.builder()
+                    .bucket(this.bucketName)
+                    .object(savedFileName)
+                    .filename(file.getAbsolutePath())
+                    .build());
+            return file;
+        } catch (Exception ex) {
+            log.error("Cannot download file: {}", savedFileName, ex);
+            throw new FileServiceException(ex.getLocalizedMessage());
+        }
     }
 
     private void createBucket(MinioClient minioClient, String bucketName) {

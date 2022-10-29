@@ -3,11 +3,16 @@ package com.example.fileservice.controller;
 import static com.example.fileservice.UriPaths.DOMAIN_ROOT;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,11 +47,16 @@ public class FileController {
 
     @GetMapping("/{id}")
     public FileInfo getFileById(@PathVariable("id") UUID id) {
-        return fileService.findById(id);
+        return fileService.findInfoById(id);
     }
-//
-//    @PostMapping("{id}/download")
-//    public ResponseEntity<Resource> downloadFile(@PathVariable("id") UUID id) {
-//        return ResponseEntity.ok();
-//    }
+
+    @PostMapping("{id}/download")
+    public ResponseEntity<ByteArrayResource> downloadFile(@PathVariable("id") UUID id) throws IOException {
+        File file = fileService.download(id);
+        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(Path.of(file.getAbsolutePath())));
+        return ResponseEntity.ok()
+            .contentLength(file.length())
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(resource);
+    }
 }

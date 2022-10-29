@@ -1,5 +1,6 @@
 package com.example.fileservice.fileservice;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -63,9 +64,21 @@ public class FileService {
         }
     }
 
-    public FileInfo findById(UUID id) {
+    public File download(UUID id) {
+        FileEntity entity = findById(id);
+        return minioService.downloadFile(entity.getOriginalFileName(), entity.getSavedFileName());
+    }
+
+    public FileInfo findInfoById(UUID id) {
         if (fileRepository.existsById(id)) {
             return convert(fileRepository.findById(id).get());
+        }
+        throw new FileServiceException("Not found", HttpStatus.NOT_FOUND);
+    }
+
+    private FileEntity findById(UUID id) {
+        if (fileRepository.existsById(id)) {
+            return fileRepository.findById(id).get();
         }
         throw new FileServiceException("Not found", HttpStatus.NOT_FOUND);
     }
