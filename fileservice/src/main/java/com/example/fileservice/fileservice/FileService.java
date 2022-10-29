@@ -90,10 +90,11 @@ public class FileService {
 
     private FileEntity getFileEntity(MultipartFile file) throws NoSuchAlgorithmException, IOException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
-        String hash = new String(md.digest(file.getBytes()));
+        byte[] hashArray = md.digest(file.getBytes());
+        String hash = new String(hashArray);
         FileEntity entity = new FileEntity();
         entity.setOriginalFileName(file.getOriginalFilename());
-        entity.setSavedFileName(UUID.randomUUID().toString());
+        entity.setSavedFileName(UUID.nameUUIDFromBytes(hashArray).toString());
         entity.setSha256(hash);
         entity.setUploadStatus(FileInfo.UploadStatus.INPROGRESS.toString());
         entity.setFileSize(file.getSize());
