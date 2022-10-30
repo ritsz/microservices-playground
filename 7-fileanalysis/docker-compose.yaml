@@ -1,0 +1,94 @@
+version: '3.7'
+
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2022-10-24T18-35-07Z
+  command: server --console-address ":9001" http://minio1/data{1...2}
+  expose:
+    - "9000"
+    - "9001"
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+    interval: 30s
+    timeout: 20s
+    retries: 3
+
+services:
+  fileservice:
+    image: file-server:latest
+    restart: always
+    ports:
+      - '8080:8080'
+    environment:
+      - DATABASE_URL=postgres
+      - DATABASE_USERNAME=postgres
+      - DATABASE_PASSWORD=postgres
+      - MINIO_URL=nginx
+
+  postgres:
+    image: debezium/postgres:12
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - /mnt/postgressdb:/var/lib/postgresql/data
+
+  zookeeper:
+    image: debezium/zookeeper:1.1
+    ports:
+     - 2181:2181
+     - 2888:2888
+     - 3888:3888
+
+  kafka:
+    image: debezium/kafka:1.1
+    ports:
+     - 9092:9092
+    environment:
+     - ZOOKEEPER_CONNECT=zookeeper:2181
+
+  connect:
+    image: debezium/connect:1.1
+    ports:
+     - 8083:8083
+    links:
+     - kafka
+     - postgres
+    environment:
+     - BOOTSTRAP_SERVERS=kafka:9092
+     - GROUP_ID=sde_group
+     - CONFIG_STORAGE_TOPIC=connect_storage_topic
+     - OFFSET_STORAGE_TOPIC=connect_offset_topic
+     - STATUS_STORAGE_TOPIC=connect_status_topic
+
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - /mnt/data-1:/data1
+      - /mnt/data-2:/data2
+
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: nginx
+    volumes:
+      - /mnt/conf/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    depends_on:
+      - minio1
+
+
+volumes:
+  data1-1:
+  data1-2:
+  data2-1:
+  data2-2:
+  data3-1:
+  data3-2:
+  data4-1:
+  data4-2:
+
