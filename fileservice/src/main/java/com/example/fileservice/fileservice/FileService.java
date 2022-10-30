@@ -2,6 +2,7 @@ package com.example.fileservice.fileservice;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
@@ -91,7 +92,7 @@ public class FileService {
     private FileEntity getFileEntity(MultipartFile file) throws NoSuchAlgorithmException, IOException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         byte[] hashArray = md.digest(file.getBytes());
-        String hash = new String(hashArray);
+        String hash = bytesToHex(hashArray);
         FileEntity entity = new FileEntity();
         entity.setOriginalFileName(file.getOriginalFilename());
         entity.setSavedFileName(UUID.nameUUIDFromBytes(hashArray).toString());
@@ -115,5 +116,16 @@ public class FileService {
         info.setRegion(entity.getRegion());
         info.setVersionId(entity.getVersionId());
         return info;
+    }
+
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    private static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 }
