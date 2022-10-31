@@ -69,8 +69,8 @@ services:
      - OFFSET_STORAGE_TOPIC=connect_offset_topic
      - STATUS_STORAGE_TOPIC=connect_status_topic
 
-  python:
-    image: mypython:latest
+  analysis-service:
+    image: analysis-server:latest
     depends_on:
       - kafka
 

@@ -1,9 +1,7 @@
+FROM python:3-alpine
 
-FROM python:3.7
+COPY ./requirements.txt /tmp/requirements.txt
+RUN pip3 install --upgrade pip && pip3 install --no-cache-dir -r /tmp/requirements.txt
+COPY tasks-service.py /var/server/tasks-service.py
 
-RUN pip3 install requests Flask kafka-python
-
-COPY ./app.py /app/app.py
-COPY ./requirements.txt /app/requirements.txt
-WORKDIR /app
-CMD ["python3", "app.py"]
+CMD python /var/server/tasks-service.py
