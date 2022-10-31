@@ -15,6 +15,7 @@ x-minio-common: &minio-common
 services:
   fileservice:
     image: file-server:latest
+    hostname: fileservice
     restart: always
     ports:
       - '8080:8080'
@@ -28,6 +29,7 @@ services:
 
   postgres:
     image: debezium/postgres:12
+    hostname: postgres
     restart: always
     environment:
       - POSTGRES_USER=postgres
@@ -39,6 +41,7 @@ services:
 
   zookeeper:
     image: debezium/zookeeper:1.1
+    hostname: zookeeper
     ports:
      - 2181:2181
      - 2888:2888
@@ -46,6 +49,7 @@ services:
 
   kafka:
     image: debezium/kafka:1.1
+    hostname: kafka
     ports:
      - 9092:9092
     depends_on:
@@ -55,6 +59,7 @@ services:
 
   connect:
     image: debezium/connect:1.1
+    hostname: connect
     ports:
      - 8083:8083
     links:
@@ -69,8 +74,11 @@ services:
      - OFFSET_STORAGE_TOPIC=connect_offset_topic
      - STATUS_STORAGE_TOPIC=connect_status_topic
 
-  analysis-service:
+  analysisservice:
     image: analysis-server:latest
+    hostname: analysisservice 
+    ports:
+      - "9080:9080"
     depends_on:
       - kafka
 
@@ -94,7 +102,7 @@ services:
 
   mongodb:
     image: mongo
-    container_name: mongodb
+    hostname: mongodb
     restart: always
     ports:
       - 27017:27017

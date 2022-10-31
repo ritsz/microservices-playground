@@ -2,6 +2,12 @@ FROM python:3-alpine
 
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade pip && pip3 install --no-cache-dir -r /tmp/requirements.txt
-COPY tasks-service.py /var/server/tasks-service.py
+COPY analysis-service/analysis.py /var/app.py
 
-CMD python /var/server/tasks-service.py
+WORKDIR /var
+
+#ENV FLASK_APP=app
+#ENV FLASK_ENV=development
+#CMD flask run --host=0.0.0.0 --port=9080
+
+CMD python /var/app.py

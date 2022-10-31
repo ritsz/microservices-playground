@@ -10,6 +10,10 @@ from pymongo import MongoClient
 from werkzeug import run_simple
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
+
+import sys
+from logging.config import dictConfig
+
 app = Flask(__name__)
 
 DATABASE_NAME = 'file_collection'
@@ -17,7 +21,7 @@ app = Flask(__name__)
 
 
 def get_mongodb(name):
-    client = MongoClient('master-node', 27017, username='root', password='example')
+    client = MongoClient('mongodb', 27017, username='root', password='example')
     db = client.users_db
     login_col = db[name]
     return login_col
@@ -42,6 +46,7 @@ class File():
         col = get_mongodb(name=DATABASE_NAME)
         file = col.find_one({'original_name': original_name})
         if not file:
+            app.logger.info("Got NO file %s", original_name)
             return None
 
         app.logger.info("Got file %s", file)
@@ -52,6 +57,7 @@ class File():
         col = get_mongodb(name=DATABASE_NAME)
         file = col.find_one({'id': id})
         if not file:
+            app.logger.info("Got NO file %s", id)
             return None
 
         app.logger.info("Got file %s", file)
@@ -140,7 +146,7 @@ def hello_world():  # put application's code here
 
 # long-running background task for consuming messages and updating File Documents.
 def background_task():
-    sleep(5)
+    sleep(25)
     while True:
         app.logger.info("Waiting for a message")
         consumer = KafkaConsumer('postgres-database.public.file_entity', bootstrap_servers='kafka:9092')
@@ -152,7 +158,7 @@ def background_task():
                               file['file_size'],
                               file['sha256'],
                               analysis_list=None)
-        print("File created : ", ack, id)
+        app.logger.info("File created %s : %s", ack, id)
         sleep(2)
 
 
@@ -160,9 +166,6 @@ daemon = Thread(target=background_task, name='MessageConsumer')
 daemon.start()
 
 if __name__ == '__main__':
-    # import logging
-    #
-    # logging.basicConfig(filename='error.log', level=logging.DEBUG)
 
     # provide app's version and deploy environment/config name to set a gauge metric
     register_metrics(app, app_version="v0.1.2", app_config="staging")
