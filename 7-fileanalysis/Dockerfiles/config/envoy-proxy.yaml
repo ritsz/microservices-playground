@@ -14,6 +14,15 @@ static_resources:
       - name: envoy.filters.network.http_connection_manager
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          generate_request_id: true
+          tracing:
+            provider:
+              name: envoy.tracers.zipkin
+              typed_config:
+                "@type": type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
+                collector_cluster: zipkin-cluster
+                collector_endpoint: "/api/v2/spans"
+                collector_endpoint_version: HTTP_JSON
           stat_prefix: ingress_http
           codec_type: AUTO
           route_config:
@@ -45,6 +54,15 @@ static_resources:
       - name: envoy.filters.network.http_connection_manager
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          generate_request_id: true
+          tracing:
+            provider:
+              name: envoy.tracers.zipkin
+              typed_config:
+                "@type": type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
+                collector_cluster: zipkin-cluster
+                collector_endpoint: "/api/v2/spans"
+                collector_endpoint_version: HTTP_JSON
           stat_prefix: ingress_http
           codec_type: AUTO
           route_config:
@@ -78,6 +96,18 @@ static_resources:
 
 
   clusters:
+  - name: zipkin-cluster
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: zipkin-cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: zipkin
+                port_value: 9411
   - name: fileservice-cluster
     connect_timeout: 0.25s
     type: STRICT_DNS

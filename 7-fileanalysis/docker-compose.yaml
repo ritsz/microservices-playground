@@ -33,6 +33,7 @@ services:
     depends_on:
       - postgres
       - nginx
+      - zipkin
     environment:
       - DATABASE_URL=postgres
       - DATABASE_USERNAME=postgres
@@ -55,6 +56,7 @@ services:
       - kafka
       - connect
       - mongodb
+      - zipkin
     healthcheck:
       test: curl --fail http://localhost:9080/health || exit 1
       interval: 10s
@@ -139,6 +141,11 @@ services:
      - 2888:2888
      - 3888:3888
   
+  zipkin:
+    image: openzipkin/zipkin:2
+    ports:
+      - '9411:9411'
+
   prometheus:
     build:
       context: Dockerfiles
@@ -149,18 +156,18 @@ services:
     depends_on:
     - frontend-proxy
 
-  grafana:
-    image: grafana/grafana:latest
-    user: "472"
-    depends_on:
-      - prometheus
-    ports:
-      - 3000:3000
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./Dockerfiles/config/grafana/provisioning/datasources/:/etc/grafana/provisioning/datasources/
-    env_file:
-      - ./Dockerfiles/config/grafana/config.monitoring
+      #  grafana:
+      #    image: grafana/grafana:latest
+      #    user: "472"
+      #    depends_on:
+      #      - prometheus
+      #    ports:
+      #      - 3000:3000
+      #    volumes:
+      #      - grafana_data:/var/lib/grafana
+      #      - ./Dockerfiles/config/grafana/provisioning/datasources/:/etc/grafana/provisioning/datasources/
+      #    env_file:
+      #      - ./Dockerfiles/config/grafana/config.monitoring
 
 volumes:
   data1-1:
