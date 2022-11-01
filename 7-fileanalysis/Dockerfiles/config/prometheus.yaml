@@ -22,3 +22,19 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
     - targets: ['frontend-proxy:9901']
+
+  # These are the metrics from the fileservice. The service is springboot.
+  # The prometheus metrics are available on port 8080/actuator/prometheus
+  - job_name: 'fileservice'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+    static_configs:
+    - targets: ['fileservice:8080']
+
+  # These are the metrics from the analysisservice. The service is Flask.
+  # The prometheus metrics are available on port 9080/metrics
+  - job_name: 'analysisservice'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+    - targets: ['analysisservice:9080']

@@ -38,6 +38,12 @@ services:
       - DATABASE_USERNAME=postgres
       - DATABASE_PASSWORD=postgres
       - MINIO_URL=nginx
+    healthcheck:
+      test: curl --fail http://localhost:8080/actuator/health || exit 1
+      interval: 10s
+      retries: 5
+      start_period: 5s
+      timeout: 10s
 
   analysisservice:
     image: analysis-server:latest
@@ -49,6 +55,12 @@ services:
       - kafka
       - connect
       - mongodb
+    healthcheck:
+      test: curl --fail http://localhost:9080/health || exit 1
+      interval: 10s
+      retries: 5
+      start_period: 5s
+      timeout: 10s
   
   postgres:
     image: debezium/postgres:12
@@ -126,6 +138,29 @@ services:
      - 2181:2181
      - 2888:2888
      - 3888:3888
+  
+  prometheus:
+    build:
+      context: Dockerfiles
+      dockerfile: Dockerfile-prometheus
+    command: --config.file=/prometheus/prometheus.yaml --log.level=debug
+    ports:
+    - 9090:9090
+    depends_on:
+    - frontend-proxy
+
+  grafana:
+    image: grafana/grafana:latest
+    user: "472"
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning/datasources/:/etc/grafana/provisioning/datasources/
+    env_file:
+      - .config/grafana/config.monitoring
 
 volumes:
   data1-1:
@@ -136,4 +171,5 @@ volumes:
   data3-2:
   data4-1:
   data4-2:
+  grafana_data: {}
 
