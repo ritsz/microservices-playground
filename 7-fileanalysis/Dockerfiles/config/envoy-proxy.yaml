@@ -33,43 +33,8 @@ static_resources:
                   cluster: analysisservice-cluster
           http_filters:
           - name: envoy.filters.http.router
-
-  - address:
-      socket_address:
-        address: 0.0.0.0
-        port_value: 8443
-    filter_chains:
-    - filters:
-      - name: envoy.filters.network.http_connection_manager
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          stat_prefix: ingress_http
-          codec_type: AUTO
-          route_config:
-            name: local_route
-            virtual_hosts:
-            - name: backend
-              domains:
-              - "*"
-              routes:
-              - match:
-                  prefix: "/api/v1/files"
-                route:
-                  cluster: fileservice-cluster
-              - match:
-                  prefix: "/api/v1/analysis"
-                route:
-                  cluster: analysisservice-cluster
-          http_filters:
-          - name: envoy.filters.http.router
-      transport_socket:
-        name: envoy.transport_sockets.tls
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          common_tls_context:
-            tls_certificates:
-              - certificate_chain: {filename: "/etc/envoy-cert.pem"}
-                private_key: {filename: "/etc/envoy-private.pem"}
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
   - name: fileservice-cluster
