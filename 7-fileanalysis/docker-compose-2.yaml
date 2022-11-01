@@ -48,6 +48,22 @@ services:
     ports:
       - '9411:9411'
 
+  policy-service:
+    build:
+      context: Dockerfiles
+      dockerfile: Dockerfile-opa
+    volumes:
+    - ./Dockerfiles/config/policy.rego:/etc/policy.rego
+    command:
+    - run
+    - --server
+    - --log-format=json-pretty
+    - --set=plugins.envoy_ext_authz_grpc.addr=:9002
+    - --set=decision_logs.console=true
+    - /etc/policy.rego
+    ports:
+      - "9002:9002"
+
 volumes:
   data1-1:
   data1-2:

@@ -41,6 +41,15 @@ static_resources:
                 route:
                   cluster: analysisservice-cluster
           http_filters:
+          - name: envoy.filters.http.ext_authz
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+              grpc_service:
+                envoy_grpc:
+                  cluster_name: policy-service-cluster
+                timeout: 0.250s
+              transport_api_version: V3
+          - name: envoy.filters.http.router
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -134,3 +143,20 @@ static_resources:
               socket_address:
                 address: analysisservice
                 port_value: 9080
+  - name: policy-service-cluster 
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: policy-service-cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 10.78.180.38
+                port_value: 9002
