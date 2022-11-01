@@ -11,17 +11,36 @@ from werkzeug import run_simple
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 
+import os
 import sys
-from logging.config import dictConfig
+import logging
+
+DB_URL=os.getenv('MONGODB_URL', default='node-2')
+DB_USER=os.getenv('MONGODB_USER', default='root')
+DB_PASS=os.getenv('MONGODB_PASS', default='example')
 
 app = Flask(__name__)
+
+log_level = logging.INFO
+ 
+for handler in app.logger.handlers:
+    app.logger.removeHandler(handler)
+
+root = os.path.dirname(os.path.abspath(__file__))
+logdir = os.path.join(root, 'logs')
+if not os.path.exists(logdir):
+    os.mkdir(logdir)
+log_file = os.path.join(logdir, 'app.log')
+handler = logging.FileHandler(log_file)
+handler.setLevel(log_level)
+app.logger.addHandler(handler)
+
+app.logger.setLevel(log_level)
 
 DATABASE_NAME = 'file_collection'
-app = Flask(__name__)
-
 
 def get_mongodb(name):
-    client = MongoClient('node-2', 27017, username='root', password='example')
+    client = MongoClient(DB_URL, 27017, username='root', password='example')
     db = client.users_db
     login_col = db[name]
     return login_col
