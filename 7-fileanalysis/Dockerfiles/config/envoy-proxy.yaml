@@ -37,9 +37,9 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
     
   - address:
-    socket_address:
-      address: 0.0.0.0
-      port_value: 8443
+      socket_address:
+        address: 0.0.0.0
+        port_value: 8443
     filter_chains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -55,13 +55,13 @@ static_resources:
               - "*"
               routes:
               - match:
-                  prefix: "/films"
+                  prefix: "/api/v1/files"
                 route:
-                  cluster: film-service-cluster
+                  cluster: fileservice-cluster
               - match:
-                  prefix: "/ratings"
+                  prefix: "/api/v1/analysis"
                 route:
-                  cluster: rating-service-cluster
+                  cluster: analysisservice-cluster
           http_filters:
           - name: envoy.filters.http.router
             typed_config:
