@@ -158,9 +158,9 @@ services:
       - 3000:3000
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./config/grafana/provisioning/datasources/:/etc/grafana/provisioning/datasources/
+      - ./Dockerfiles/config/grafana/provisioning/datasources/:/etc/grafana/provisioning/datasources/
     env_file:
-      - .config/grafana/config.monitoring
+      - ./Dockerfiles/config/grafana/config.monitoring
 
 volumes:
   data1-1:
