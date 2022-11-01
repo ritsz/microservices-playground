@@ -13,20 +13,45 @@ x-minio-common: &minio-common
     retries: 3
 
 services:
+  frontend-proxy:
+    image: frontend-proxy:latest
+    build:
+      context: Dockerfiles
+      dockerfile: Dockerfile-envoyproxy
+    networks:
+    - servicemesh
+    ports:
+    - "8080:8080"
+    - "8443:8443"
+    - "9901:9901"
+    depends_on:
+    - fileservice
+    - analysisservice
+  
   fileservice:
     image: file-server:latest
     hostname: fileservice
     restart: always
-    ports:
-      - '8080:8080'
     depends_on:
       - postgres
+      - nginx
     environment:
       - DATABASE_URL=postgres
       - DATABASE_USERNAME=postgres
       - DATABASE_PASSWORD=postgres
       - MINIO_URL=nginx
 
+  analysisservice:
+    image: analysis-server:latest
+    build:
+      context: Dockerfiles
+      dockerfile: Dockerfile-analysisservice
+    hostname: analysisservice 
+    depends_on:
+      - kafka
+      - connect
+      - mongodb
+  
   postgres:
     image: debezium/postgres:12
     hostname: postgres
@@ -39,23 +64,35 @@ services:
     volumes:
       - /mnt/postgressdb:/var/lib/postgresql/data
 
-  zookeeper:
-    image: debezium/zookeeper:1.1
-    hostname: zookeeper
+  mongodb:
+    image: mongo
+    hostname: mongodb
+    restart: always
     ports:
-     - 2181:2181
-     - 2888:2888
-     - 3888:3888
-
-  kafka:
-    image: debezium/kafka:1.1
-    hostname: kafka
-    ports:
-     - 9092:9092
-    depends_on:
-     - zookeeper
+      - 27017:27017
     environment:
-     - ZOOKEEPER_CONNECT=zookeeper:2181
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      PUID: 1000
+      PGID: 1000
+
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: nginx
+    volumes:
+      - /mnt/conf/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    depends_on:
+      - minio1
+  
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - /mnt/data-1:/data1
+      - /mnt/data-2:/data2
 
   connect:
     image: debezium/connect:1.1
@@ -73,44 +110,24 @@ services:
      - CONFIG_STORAGE_TOPIC=connect_storage_topic
      - OFFSET_STORAGE_TOPIC=connect_offset_topic
      - STATUS_STORAGE_TOPIC=connect_status_topic
-
-  analysisservice:
-    image: analysis-server:latest
-    hostname: analysisservice 
+  
+  kafka:
+    image: debezium/kafka:1.1
+    hostname: kafka
     ports:
-      - "9080:9080"
+     - 9092:9092
     depends_on:
-      - kafka
-
-  minio1:
-    <<: *minio-common
-    hostname: minio1
-    volumes:
-      - /mnt/data-1:/data1
-      - /mnt/data-2:/data2
-
-  nginx:
-    image: nginx:1.19.2-alpine
-    hostname: nginx
-    volumes:
-      - /mnt/conf/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    depends_on:
-      - minio1
-
-  mongodb:
-    image: mongo
-    hostname: mongodb
-    restart: always
-    ports:
-      - 27017:27017
+     - zookeeper
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-      PUID: 1000
-      PGID: 1000
+     - ZOOKEEPER_CONNECT=zookeeper:2181
+
+  zookeeper:
+    image: debezium/zookeeper:1.1
+    hostname: zookeeper
+    ports:
+     - 2181:2181
+     - 2888:2888
+     - 3888:3888
 
 volumes:
   data1-1:

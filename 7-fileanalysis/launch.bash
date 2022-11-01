@@ -3,11 +3,8 @@
 set -x
 
 echo "Build images"
-docker build -f Dockerfile-python --tag analysis-server:latest .
-
-
 echo "Start containers"
-docker compose -f docker-compose.yaml up -d --force-recreate
+docker compose -f docker-compose.yaml up -d --force-recreate --build
 
 echo "Sleeping"
 sleep 15
