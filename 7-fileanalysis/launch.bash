@@ -4,7 +4,7 @@ set -x
 
 echo "Build images"
 echo "Start containers"
-docker compose -f docker-compose.yaml up -d --force-recreate --build
+docker compose -f docker-compose.yaml  --env-file ev.config up -d --force-recreate --build
 
 echo "Sleeping"
 sleep 15

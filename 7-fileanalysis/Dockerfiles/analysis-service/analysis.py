@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 
 def get_mongodb(name):
-    client = MongoClient('mongodb', 27017, username='root', password='example')
+    client = MongoClient('node-2', 27017, username='root', password='example')
     db = client.users_db
     login_col = db[name]
     return login_col

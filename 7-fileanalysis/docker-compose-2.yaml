@@ -1,0 +1,60 @@
+version: '3.7'
+
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2022-10-24T18-35-07Z
+  command: server --console-address ":9001" http://minio1/data{1...2}
+  expose:
+    - "9000"
+    - "9001"
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+    interval: 30s
+    timeout: 20s
+    retries: 3
+
+services:
+  mongodb:
+    image: mongo
+    hostname: mongodb
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      PUID: 1000
+      PGID: 1000
+  
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: nginx
+    volumes:
+      - /var/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    depends_on:
+      - minio1
+  
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - /mnt2/data-1:/data1
+      - /mnt2/data-2:/data2
+
+  zipkin:
+    image: openzipkin/zipkin:2
+    ports:
+      - '9411:9411'
+
+volumes:
+  data1-1:
+  data1-2:
+  data2-1:
+  data2-2:
+  data3-1:
+  data3-2:
+  data4-1:
+  data4-2:
+  grafana_data: {}

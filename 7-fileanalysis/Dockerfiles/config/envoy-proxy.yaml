@@ -106,7 +106,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: zipkin
+                address: ${ZIPKIN_URL}
                 port_value: 9411
   - name: fileservice-cluster
     connect_timeout: 0.25s
