@@ -52,7 +52,7 @@ def close_mongodb():
 
 
 class File():
-    def __init__(self, id, original_name, bucket_name, file_size, sha256, analysis_list=None):
+    def __init__(self, id, original_name, bucket_name, file_size, sha256, analysis_list=list()):
         self.id = id
         self.original_name = original_name
         self.analyses = analysis_list
@@ -83,7 +83,7 @@ class File():
         return file
 
     @staticmethod
-    def create(id, original_name, bucket_name, file_size, sha256, analysis_list=None):
+    def create(id, original_name, bucket_name, file_size, sha256, analysis_list=list()):
         file = File.get_by_id(id)
         if file:
             return True, file
@@ -140,15 +140,16 @@ def get_file_analysis(id):
     file = File.get_by_id(id)
     if not file:
         return abort(404)
+    resp = {
+        "original_name": file['original_name'],
+        "id": file['id'],
+        "bucket_name": file['bucket_name'],
+        "file_size": file['file_size'],
+        "sha256": file['sha256'],
+        "analyses": file['analyses']
+    }
     return make_response(
-        jsonify(
-            {"original_name": file['original_name']},
-            {"id": file['id']},
-            {"bucket_name": file['bucket_name']},
-            {"file_size": file['file_size']},
-            {"sha256": file['sha256']},
-            {"analyses": file['analyses']}
-        ),
+        jsonify(resp),
         200,
     )
 
@@ -176,7 +177,7 @@ def background_task():
                               file['bucket_name'],
                               file['file_size'],
                               file['sha256'],
-                              analysis_list=None)
+                              analysis_list=list())
         app.logger.info("File created %s : %s", ack, id)
         sleep(2)
 
