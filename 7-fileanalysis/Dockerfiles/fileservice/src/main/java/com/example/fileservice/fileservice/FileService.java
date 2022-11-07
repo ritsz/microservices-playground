@@ -42,15 +42,8 @@ public class FileService {
         Long timestamp = System.currentTimeMillis();
         if (saved != null) {
             log.info("Updating using existing record: {}", saved);
-            entity.setSavedFileName(saved.getSavedFileName());
-            entity.setFirstUploadTime(saved.getFirstUploadTime());
-            entity.setLastUploadTime(timestamp);
-            entity.setBucketName(saved.getBucketName());
-            entity.setEtag(saved.getEtag());
-            entity.setRegion(saved.getRegion());
-            entity.setVersionId(saved.getVersionId());
-            entity.setUploadStatus(FileInfo.UploadStatus.DONE.toString());
-            return convert(fileRepository.save(entity));
+            saved.setLastUploadTime(timestamp);
+            return convert(fileRepository.save(saved));
         } else {
             log.info("Adding new record: {}", entity);
             ObjectWriteResponse response = minioService.uploadFile(entity.getSavedFileName(), file.getBytes());
