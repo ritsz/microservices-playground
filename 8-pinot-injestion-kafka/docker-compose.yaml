@@ -1,0 +1,73 @@
+version: '3.7'
+
+services:
+  zookeeper:
+    image: 'zookeeper:3.7.0'
+    container_name: zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+  
+  kafka:
+    image: 'bitnami/kafka:3'
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CREATE_TOPICS="github-events:1:1"
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://0.0.0.0:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://10.192.195.90:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+    depends_on:
+      - zookeeper
+
+  pinot-controller:
+    image: apachepinot/pinot:latest
+    container_name: pinot-controller
+    command: start-controller.sh
+    ports:
+      - "9000:9000"
+    depends_on:
+      - zookeeper
+
+  pinot-server:
+    image: apachepinot/pinot:latest
+    container_name: pinot-server
+    command: start-server.sh -metadataStoreType zookeeper -zkAddress zookeeper:2181
+    ports:
+      - "8099:8099"
+    depends_on:
+      - zookeeper
+      - pinot-controller
+
+  pinot-ingestion:
+    image: apachepinot/pinot:latest
+    container_name: pinot-ingestion
+    command: start-ingestion.sh -stream.kafka.brokerList kafka:9092 -stream.kafka.topic github-events -tableConfigFile /opt/pinot/config/pinot-tables/github-events.json -schemaFile /opt/pinot/config/pinot-schemas/github-events-schema.json
+    volumes:
+      - ./config:/opt/pinot/config
+    depends_on:
+      - kafka
+      - pinot-controller
+
+  kafka-producer:
+    build:
+      context: kafka-producer
+      dockerfile: Dockerfile
+    container_name: kafka-producer
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPOS="apache/kafka,apache/pinot,kubernetes/kubernetes"
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=github-events
+    depends_on:
+      - kafka
+
+volumes:
+  data:
