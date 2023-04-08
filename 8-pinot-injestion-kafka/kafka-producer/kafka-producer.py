@@ -28,7 +28,7 @@ headers = {
     "X-GitHub-Api-Version": "2022-11-28"
 }
 
-time.sleep(5)
+time.sleep(15)
 
 # Define the Kafka producer
 producer = KafkaProducer(
@@ -48,39 +48,45 @@ endpoint = "https://api.github.com/repos/{}/events"
 params = {"per_page": "100"}
 
 
-while True:
-    # Loop through the list of repositories
-    for repo in github_repos:
-        # Make a request to the GitHub API with authentication
-        url = endpoint.format(repo)
-        response = requests.get(url, params=params, headers=headers)
-        print("Repo [{}]: response: {}".format(url, response))
-        count = 0
-        
-        # Check if the response was successful
-        if response.status_code == 200:
-            # Loop through the list of events
-            for event in response.json():
-                # Build the message to send to Kafka
-                message = {
-                    "repo": repo,
-                    "event": event
-                }
-                
-                # Send the message to Kafka
-                future = producer.send("github-events", value=message)
-                
-                # Log the message
-                print("Sent message to Kafka for repo: {}".format(url))
+# Loop through the list of repositories
+for repo in github_repos:
+    # Make a request to the GitHub API with authentication
+    url = endpoint.format(repo)
+    response = requests.get(url, params=params, headers=headers)
+    print("Repo [{}]: response: {}".format(url, response))
+    count = 0
+    
+    # Check if the response was successful
+    if response.status_code == 200:
+        # Loop through the list of events
+        for event in response.json():
+            id_value = event["id"]
+            type_value = event["type"]
+            # Build the message to send to Kafka
+            message = {
+                "repo": repo,
+                "eventId": id_value,
+                "eventType": type_value,
+                "timestampInEpoch": int(time.time())
+            }
+            print(f"Sending {message}")
+            
+            # Send the message to Kafka
+            future = producer.send("github-events", value=message)
+            
+            # Log the message
+            print("Sent message to Kafka for repo: {}".format(url))
 
-                # Block for 'synchronous' sends
-                try:
-                    record_metadata = future.get(timeout=10)
-                    count = count + 1
-                except KafkaError as e:
-                    print(f"Error while sending message to Kafka: {e}")
-        else:
-            # Log the error
-            print("Error retrieving events for repo {}: {}".format(repo, response.text))
-        print(f"[{count}] Message(s) sent to Kafka")
-    time.sleep(5)
+            # Block for 'synchronous' sends
+            try:
+                record_metadata = future.get(timeout=10)
+                count = count + 1
+            except KafkaError as e:
+                print(f"Error while sending message to Kafka: {e}")
+    else:
+        # Log the error
+        print("Error retrieving events for repo {}: {}".format(repo, response.text))
+    print(f"[{count}] Message(s) sent to Kafka")
+
+# Sleep 5 mins incase we need to debug.
+time.sleep(300)

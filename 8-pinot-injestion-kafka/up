@@ -1,0 +1,19 @@
+#! /bin/bash
+ 
+export DOCKER_HOST=ssh://root@server
+
+# Start containers
+docker-compose up -d --build || exit 
+
+
+# Set up the volume
+docker cp ./pinot-config pinot-controller:/tmp/pinot-config
+
+sleep 10
+
+# Add the tables
+docker exec -it pinot-controller \
+    /opt/pinot/bin/pinot-admin.sh AddTable \
+        -schemaFile /tmp/pinot-config/transcript-schema.json \
+        -tableConfigFile /tmp/pinot-config/transcript-table-realtime.json \
+        -exec

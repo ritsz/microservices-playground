@@ -1,0 +1,23 @@
+{
+  "schemaName": "githubEvents",
+  "dimensionFieldSpecs": [
+    {
+      "name": "repo",
+      "dataType": "STRING"
+    },
+    {
+      "name": "eventId",
+      "dataType": "STRING"
+    },
+    {
+      "name": "eventType",
+      "dataType": "STRING"
+    }
+  ],
+  "dateTimeFieldSpecs": [{
+    "name": "timestampInEpoch",
+    "dataType": "LONG",
+    "format" : "1:MILLISECONDS:EPOCH",
+    "granularity": "1:MILLISECONDS"
+  }]
+}

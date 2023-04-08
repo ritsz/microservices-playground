@@ -4,6 +4,8 @@ services:
   zookeeper:
     image: 'zookeeper:3.7.0'
     container_name: zookeeper
+    networks:
+      - pinot-demo
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     ports:
@@ -12,6 +14,8 @@ services:
   kafka:
     image: 'bitnami/kafka:3'
     container_name: kafka
+    networks:
+      - pinot-demo
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -29,38 +33,57 @@ services:
 
   pinot-controller:
     image: apachepinot/pinot:latest
+    command: "StartController -zkAddress zookeeper:2181"
     container_name: pinot-controller
-    command: start-controller.sh
+    restart: unless-stopped
+    networks:
+      - pinot-demo
     ports:
       - "9000:9000"
+    environment:
+      JAVA_OPTS: "-Dplugins.dir=/opt/pinot/plugins -Xms1G -Xmx4G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xloggc:gc-pinot-controller.log"
+      PINOT_CONTROLLER_METRICS_PREFIX: "pinot.controller"
+      PINOT_CONTROLLER_DATA_SOURCES_ZK_METADATA: "/pinot/kafka"
+      PINOT_CONTROLLER_DATA_SOURCES_KAFKA_BROKER_LIST: "kafka:9092"
+      PINOT_CONTROLLER_DATA_SOURCES_KAFKA_TOPIC_NAME: "github-events"
     depends_on:
       - zookeeper
-
-  pinot-server:
+  
+  pinot-broker:
     image: apachepinot/pinot:latest
-    container_name: pinot-server
-    command: start-server.sh -metadataStoreType zookeeper -zkAddress zookeeper:2181
+    command: "StartBroker -zkAddress zookeeper:2181"
+    restart: unless-stopped
+    container_name: "pinot-broker"
+    networks:
+      - pinot-demo
     ports:
       - "8099:8099"
+    environment:
+      JAVA_OPTS: "-Dplugins.dir=/opt/pinot/plugins -Xms4G -Xmx4G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xloggc:gc-pinot-broker.log"
     depends_on:
-      - zookeeper
       - pinot-controller
-
-  pinot-ingestion:
+  
+  pinot-server:
     image: apachepinot/pinot:latest
-    container_name: pinot-ingestion
-    command: start-ingestion.sh -stream.kafka.brokerList kafka:9092 -stream.kafka.topic github-events -tableConfigFile /opt/pinot/config/pinot-tables/github-events.json -schemaFile /opt/pinot/config/pinot-schemas/github-events-schema.json
-    volumes:
-      - ./config:/opt/pinot/config
+    command: "StartServer -zkAddress zookeeper:2181"
+    restart: unless-stopped
+    container_name: "pinot-server"
+    networks:
+      - pinot-demo
+    ports:
+      - "8098:8098"
+    environment:
+      JAVA_OPTS: "-Dplugins.dir=/opt/pinot/plugins -Xms4G -Xmx16G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xloggc:gc-pinot-server.log"
     depends_on:
-      - kafka
-      - pinot-controller
+      - pinot-broker
 
   kafka-producer:
     build:
       context: kafka-producer
       dockerfile: Dockerfile
     container_name: kafka-producer
+    networks:
+      - pinot-demo
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GITHUB_REPOS="apache/kafka,apache/pinot,kubernetes/kubernetes"
@@ -71,3 +94,7 @@ services:
 
 volumes:
   data:
+
+networks:
+  pinot-demo:
+    driver: bridge
